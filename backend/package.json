@@ -8,6 +8,8 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "dev:sync": "SYNC_DB=true nodemon src/server.js",
+    "db:setup": "powershell -ExecutionPolicy Bypass -File setup-database-simple.ps1",
+    "db:setup:batch": "setup-database.bat",
     "db:init": "node src/db/init.js",
     "db:seed": "node src/db/seed.js",
     "test": "jest",

@@ -1,36 +1,37 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { useDispatch, useSelector } from 'react-redux'
-import { addToCart, addItemLocally } from '../../store/slices/cartSlice.js'
-import { showModal } from '../../store/slices/uiSlice.js'
-import { showToast } from '../../store/slices/uiSlice.js'
+import { Link, useNavigate } from 'react-router-dom'
 import { ShoppingCart, Star, Tag } from 'lucide-react'
+import { cartAPI } from '../../services/api'
+import { tokenUtils } from '../../services/api'
 
 const ProductCard = ({ product }) => {
   const [isAddingToCart, setIsAddingToCart] = useState(false)
-  
-  const dispatch = useDispatch()
-  const { isAuthenticated } = useSelector(state => state.auth)
+  const navigate = useNavigate()
 
   const handleAddToCart = async () => {
-    if (!isAuthenticated) {
-      dispatch(showModal({ type: 'login' }))
+    if (!tokenUtils.isAuthenticated()) {
+      // Redirect to login page
+      navigate('/login')
       return
     }
 
     setIsAddingToCart(true)
     try {
-      await dispatch(addToCart({
+      await cartAPI.addItem({
         productId: product.id,
         qty: 1
-      })).unwrap()
+      })
       
-      dispatch(showToast({
-        message: 'Product added to cart successfully!',
-        type: 'success'
+      // Show success message (you can implement a toast system)
+      console.log('Product added to cart successfully!')
+      
+      // Dispatch custom event to notify other components
+      window.dispatchEvent(new CustomEvent('cart:updated', {
+        detail: { action: 'add', productId: product.id }
       }))
     } catch (error) {
-      // Error is handled by the API interceptor
+      console.error('Failed to add product to cart:', error)
+      // Show error message (you can implement a toast system)
     } finally {
       setIsAddingToCart(false)
     }

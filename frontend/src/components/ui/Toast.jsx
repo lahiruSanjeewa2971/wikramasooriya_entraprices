@@ -1,23 +1,38 @@
-import { useEffect } from 'react'
-import { useSelector, useDispatch } from 'react-redux'
-import { hideToast } from '../../store/slices/uiSlice.js'
+import { useEffect, useState } from 'react'
 import { CheckCircle, XCircle, Info, AlertTriangle, X } from 'lucide-react'
 
-const Toast = () => {
-  const dispatch = useDispatch()
-  const { show, message, type, duration } = useSelector(state => state.ui.toast)
+const Toast = ({ 
+  show = false, 
+  message = '', 
+  type = 'info', 
+  duration = 5000, 
+  onClose,
+  position = 'top-right'
+}) => {
+  const [isVisible, setIsVisible] = useState(show)
 
   useEffect(() => {
-    if (show) {
+    setIsVisible(show)
+  }, [show])
+
+  useEffect(() => {
+    if (isVisible && duration > 0) {
       const timer = setTimeout(() => {
-        dispatch(hideToast())
+        handleClose()
       }, duration)
 
       return () => clearTimeout(timer)
     }
-  }, [show, duration, dispatch])
+  }, [isVisible, duration])
 
-  if (!show) return null
+  const handleClose = () => {
+    setIsVisible(false)
+    if (onClose) {
+      onClose()
+    }
+  }
+
+  if (!isVisible) return null
 
   const getIcon = () => {
     switch (type) {
@@ -58,8 +73,27 @@ const Toast = () => {
     }
   }
 
+  const getPositionClasses = () => {
+    switch (position) {
+      case 'top-left':
+        return 'top-4 left-4'
+      case 'top-center':
+        return 'top-4 left-1/2 transform -translate-x-1/2'
+      case 'top-right':
+        return 'top-4 right-4'
+      case 'bottom-left':
+        return 'bottom-4 left-4'
+      case 'bottom-center':
+        return 'bottom-4 left-1/2 transform -translate-x-1/2'
+      case 'bottom-right':
+        return 'bottom-4 right-4'
+      default:
+        return 'top-4 right-4'
+    }
+  }
+
   return (
-    <div className="fixed top-4 right-4 z-50 animate-fade-in">
+    <div className={`fixed ${getPositionClasses()} z-50 animate-fade-in`}>
       <div className={`${getBgColor()} border rounded-lg shadow-lg p-4 max-w-sm`}>
         <div className="flex items-start">
           <div className="flex-shrink-0">
@@ -72,7 +106,7 @@ const Toast = () => {
           </div>
           <div className="ml-4 flex-shrink-0">
             <button
-              onClick={() => dispatch(hideToast())}
+              onClick={handleClose}
               className="text-gray-400 hover:text-gray-600 transition-colors"
             >
               <X className="h-4 w-4" />

@@ -1,20 +1,56 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { useSelector, useDispatch } from "react-redux";
-import { logoutUser } from "@/store/slices/authSlice.js";
 import { ShoppingCart, User, LogOut, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { tokenUtils } from "@/services/api";
 
 const TopNav = () => {
   const [open, setOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
+  const [itemCount, setItemCount] = useState(0);
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-  
-  const { isAuthenticated, user } = useSelector(state => state.auth);
-  const { itemCount } = useSelector(state => state.cart);
+
+  useEffect(() => {
+    // Check authentication status on component mount
+    const checkAuth = () => {
+      const token = tokenUtils.getToken();
+      if (token) {
+        setIsAuthenticated(true);
+        // You can fetch user data here if needed
+        // For now, we'll use a placeholder
+        setUser({ name: 'User' });
+      } else {
+        setIsAuthenticated(false);
+        setUser(null);
+      }
+    };
+
+    checkAuth();
+
+    // Listen for auth events
+    const handleLogout = () => {
+      setIsAuthenticated(false);
+      setUser(null);
+    };
+
+    const handleLogin = () => {
+      checkAuth();
+    };
+
+    window.addEventListener('auth:logout', handleLogout);
+    window.addEventListener('auth:login', handleLogin);
+
+    return () => {
+      window.removeEventListener('auth:logout', handleLogout);
+      window.removeEventListener('auth:login', handleLogin);
+    };
+  }, []);
 
   const handleLogout = () => {
-    dispatch(logoutUser());
+    tokenUtils.removeTokens();
+    setIsAuthenticated(false);
+    setUser(null);
     navigate('/');
   };
 

@@ -38,6 +38,17 @@ export const authSchemas = {
         'string.email': 'Please provide a valid email address',
         'any.required': 'Email is required'
       }),
+    mobile: Joi.string().pattern(/^[+]?[\d\s\-\(\)]{10,15}$/).required()
+      .messages({
+        'string.pattern.base': 'Please provide a valid mobile number',
+        'any.required': 'Mobile number is required'
+      }),
+    location: Joi.string().min(3).max(255).required()
+      .messages({
+        'string.min': 'Location must be at least 3 characters long',
+        'string.max': 'Location cannot exceed 255 characters',
+        'any.required': 'Location is required'
+      }),
     password: Joi.string().min(8).required()
       .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
       .messages({

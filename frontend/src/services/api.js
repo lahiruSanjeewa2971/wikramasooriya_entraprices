@@ -1,7 +1,4 @@
 import axios from 'axios'
-import { store } from '../store/store.js'
-import { logoutUser } from '../store/slices/authSlice.js'
-import { showToast } from '../store/slices/uiSlice.js'
 
 // Create axios instance
 const api = axios.create({
@@ -12,10 +9,19 @@ const api = axios.create({
   },
 })
 
+// Helper functions for token management
+const getToken = () => localStorage.getItem('authToken')
+const getRefreshToken = () => localStorage.getItem('refreshToken')
+const setToken = (token) => localStorage.setItem('authToken', token)
+const removeTokens = () => {
+  localStorage.removeItem('authToken')
+  localStorage.removeItem('refreshToken')
+}
+
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
-    const token = store.getState().auth.token
+    const token = getToken()
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -38,14 +44,14 @@ api.interceptors.response.use(
 
       // Try to refresh token
       try {
-        const refreshToken = store.getState().auth.refreshToken
+        const refreshToken = getRefreshToken()
         if (refreshToken) {
           const response = await axios.post('/api/auth/refresh', {
             refreshToken
           })
           
           const { accessToken } = response.data.data.tokens
-          store.dispatch({ type: 'auth/setToken', payload: accessToken })
+          setToken(accessToken)
           
           // Retry original request
           originalRequest.headers.Authorization = `Bearer ${accessToken}`
@@ -53,10 +59,10 @@ api.interceptors.response.use(
         }
       } catch (refreshError) {
         // Refresh failed, logout user
-        store.dispatch(logoutUser())
-        store.dispatch(showToast({
-          message: 'Session expired. Please login again.',
-          type: 'error'
+        removeTokens()
+        // You can add a callback or event to notify the app about logout
+        window.dispatchEvent(new CustomEvent('auth:logout', {
+          detail: { message: 'Session expired. Please login again.' }
         }))
       }
     }
@@ -64,9 +70,9 @@ api.interceptors.response.use(
     // Handle other errors
     if (error.response?.data?.error) {
       const errorMessage = error.response.data.error.message
-      store.dispatch(showToast({
-        message: errorMessage,
-        type: 'error'
+      // You can add a callback or event to notify the app about errors
+      window.dispatchEvent(new CustomEvent('api:error', {
+        detail: { message: errorMessage }
       }))
     }
 
@@ -104,6 +110,15 @@ export const cartAPI = {
 // Contact API
 export const contactAPI = {
   submitContact: (contactData) => api.post('/contact', contactData)
+}
+
+// Token management utilities
+export const tokenUtils = {
+  getToken,
+  getRefreshToken,
+  setToken,
+  removeTokens,
+  isAuthenticated: () => !!getToken()
 }
 
 export default api

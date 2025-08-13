@@ -23,6 +23,20 @@ const User = sequelize.define('User', {
       isEmail: true
     }
   },
+  mobile: {
+    type: DataTypes.STRING(20),
+    allowNull: false,
+    validate: {
+      len: [10, 20]
+    }
+  },
+  location: {
+    type: DataTypes.STRING(255),
+    allowNull: false,
+    validate: {
+      len: [3, 255]
+    }
+  },
   password_hash: {
     type: DataTypes.STRING(255),
     allowNull: false
