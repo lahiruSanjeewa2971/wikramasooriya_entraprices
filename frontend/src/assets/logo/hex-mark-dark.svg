@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="160" viewBox="0 0 640 160" role="img" aria-label="Wikramasooriya Enterprises hex nut logo - dark">
+  <defs>
+    <style>
+      .primary{stroke:#6ea8ff;stroke-width:8;fill:none}
+      .text{fill:#f8fafc;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:36px}
+      .accent{fill:#ff9b45}
+    </style>
+  </defs>
+  <rect width="640" height="160" fill="#0b1220" rx="12"/>
+  <g transform="translate(24,24)">
+    <polygon points="56,0 112,32 112,96 56,128 0,96 0,32" class="primary"/>
+    <circle cx="56" cy="64" r="22" class="primary" stroke-width="6"/>
+  </g>
+  <g transform="translate(160,88)">
+    <text class="text">Wikramasooriya <tspan class="accent">Enterprises</tspan></text>
+  </g>
+</svg>

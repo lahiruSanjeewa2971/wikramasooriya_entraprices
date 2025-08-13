@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="160" viewBox="0 0 640 160" role="img" aria-label="Wikramasooriya Enterprises W+island logo - dark">
+  <defs>
+    <style>
+      .w{fill:#6ea8ff}
+      .island{fill:#ff9b45}
+      .text{fill:#f8fafc;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:36px}
+    </style>
+  </defs>
+  <rect width="640" height="160" fill="#0b1220" rx="12"/>
+  <g transform="translate(20,18)">
+    <path class="w" d="M0,0 L16,0 L30,60 L46,10 L62,60 L78,0 L94,0 L70,120 L54,120 L38,60 L22,120 L6,120 Z"/>
+    <path class="island" d="M120,20 C130,5 150,8 156,24 C164,45 150,60 148,74 C146,86 156,96 144,108 C134,118 120,112 116,98 C112,84 118,76 120,66 C122,54 110,40 120,20 Z"/>
+  </g>
+  <g transform="translate(200,88)">
+    <text class="text">Wikramasooriya Enterprises</text>
+  </g>
+</svg>

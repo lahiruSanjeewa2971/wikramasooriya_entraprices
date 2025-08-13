@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    container_name: wik_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: wikadmin
+      POSTGRES_PASSWORD: SecretPass123
+      POSTGRES_DB: wik_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - wik_pgdata:/var/lib/postgresql/data
+      - ./backend/db/init:/docker-entrypoint-initdb.d
+    networks:
+      - wik_network
+
+  # Optional: Adminer for database management
+  adminer:
+    image: adminer:latest
+    container_name: wik_adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+    depends_on:
+      - db
+    networks:
+      - wik_network
+
+volumes:
+  wik_pgdata:
+    driver: local
+
+networks:
+  wik_network:
+    driver: bridge

@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="160" viewBox="0 0 640 160" role="img" aria-label="Wikramasooriya Enterprises gear logo - light">
+  <defs>
+    <style>
+      .primary{fill:#2556a6}
+      .secondary{fill:#f27a18}
+      .text{fill:#0f172a;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:36px}
+    </style>
+  </defs>
+  <!-- Icon: simplified gear with inner hub -->
+  <g transform="translate(20,20)">
+    <circle cx="60" cy="60" r="38" fill="#e6eefc"/>
+    <g fill="#2556a6">
+      <circle cx="60" cy="60" r="18"/>
+      <!-- teeth -->
+      <rect x="58" y="6" width="4" height="16" rx="2"/>
+      <rect x="58" y="98" width="4" height="16" rx="2"/>
+      <rect x="6" y="58" width="16" height="4" rx="2"/>
+      <rect x="98" y="58" width="16" height="4" rx="2"/>
+      <rect x="90" y="22" width="16" height="4" rx="2" transform="rotate(45 98 24)"/>
+      <rect x="14" y="22" width="16" height="4" rx="2" transform="rotate(-45 22 24)"/>
+      <rect x="90" y="94" width="16" height="4" rx="2" transform="rotate(-45 98 96)"/>
+      <rect x="14" y="94" width="16" height="4" rx="2" transform="rotate(45 22 96)"/>
+    </g>
+    <circle cx="60" cy="60" r="12" fill="#f8fafc" stroke="#f27a18" stroke-width="6"/>
+  </g>
+  <!-- Wordmark -->
+  <g transform="translate(160,88)">
+    <text class="text">
+      <tspan fill="#0f172a">Wikramasooriya </tspan>
+      <tspan class="secondary">Enterprises</tspan>
+    </text>
+  </g>
+</svg>
