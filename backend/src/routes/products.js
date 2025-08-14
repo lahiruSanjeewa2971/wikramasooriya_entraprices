@@ -11,12 +11,6 @@ router.get('/',
   asyncHandler(ProductController.listProducts)
 );
 
-// GET /api/products/:id - Get product details
-router.get('/:id',
-  optionalAuth,
-  asyncHandler(ProductController.getProduct)
-);
-
 // GET /api/products/categories - Get all categories
 router.get('/categories',
   asyncHandler(ProductController.getCategories)
@@ -32,6 +26,12 @@ router.get('/featured',
 router.get('/new',
   optionalAuth,
   asyncHandler(ProductController.getNewArrivals)
+);
+
+// GET /api/products/:id - Get product details (must be last)
+router.get('/:id',
+  optionalAuth,
+  asyncHandler(ProductController.getProduct)
 );
 
 export default router;

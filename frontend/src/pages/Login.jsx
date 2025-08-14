@@ -5,6 +5,8 @@ import Input from "@/components/ui/input";
 import AuthLayout from "@/components/auth/AuthLayout";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { z } from "zod";
+import authService from "@/services/authService";
+import toastService from "@/services/toastService";
 
 // Zod validation schema
 const loginSchema = z.object({
@@ -15,7 +17,7 @@ const loginSchema = z.object({
   password: z
     .string()
     .min(1, "Password is required")
-    .min(6, "Password must be at least 6 characters"),
+    .min(8, "Password must be at least 8 characters"),
 });
 
 const Login = () => {
@@ -26,48 +28,39 @@ const Login = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
     
     try {
-      // Validate form data with Zod
+      // Validate form data
       const validatedData = loginSchema.parse(formData);
-      
-      // Clear any previous errors
       setErrors({});
       
-      console.log("Login submitted:", validatedData);
+      setIsLoading(true);
       
-      // TODO: Handle login logic here
-      // For now, just simulate a successful login
-      setTimeout(() => {
-        // Store token in localStorage (simulate)
-        localStorage.setItem('authToken', 'dummy-token');
-        localStorage.setItem('refreshToken', 'dummy-refresh-token');
-        
-        // Dispatch login event
-        window.dispatchEvent(new CustomEvent('auth:login'));
-        
-        // Redirect to home page
-        navigate('/');
-      }, 1000);
+      // Call auth service
+      const result = await authService.login(validatedData);
       
+      if (result.success) {
+        toastService.success("Login successful! Welcome back.");
+        navigate("/");
+      }
     } catch (error) {
       if (error instanceof z.ZodError) {
-        // Convert Zod errors to our error format
+        // Validation errors
         const newErrors = {};
         error.errors.forEach((err) => {
           newErrors[err.path[0]] = err.message;
         });
         setErrors(newErrors);
       } else {
-        console.error("Validation error:", error);
+        // API errors
+        toastService.error(error.message);
       }
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
 
@@ -84,33 +77,33 @@ const Login = () => {
   return (
     <AuthLayout 
       title="Welcome Back" 
-      subtitle="Sign in to access your industrial parts catalog"
+      subtitle="Sign in to your account to continue"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
-        <Input
-          label="Email Address"
-          name="email"
-          type="email"
-          value={formData.email}
-          onChange={handleChange}
-          icon={Mail}
-          placeholder="your.email@company.com"
-          error={errors.email}
+        <Input 
+          label="Email Address" 
+          name="email" 
+          type="email" 
+          value={formData.email} 
+          onChange={handleChange} 
+          icon={Mail} 
+          placeholder="your.email@company.com" 
+          error={errors.email} 
         />
-
+        
         <div className="space-y-2">
           <label className="text-sm font-medium text-foreground">
             Password
           </label>
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground pointer-events-none z-10" />
+            <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground z-10 pointer-events-none" />
             <input
               name="password"
               type={showPassword ? "text" : "password"}
               value={formData.password}
               onChange={handleChange}
               placeholder="Enter your password"
-              className="flex h-10 w-full rounded-md border border-input bg-background pl-10 pr-12 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full pl-10 pr-12 py-3 border border-input rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-colors"
             />
             <button
               type="button"
@@ -121,7 +114,7 @@ const Login = () => {
             </button>
           </div>
           {errors.password && (
-            <p className="text-sm text-red-500 mt-1">{errors.password}</p>
+            <p className="text-sm text-destructive mt-1">{errors.password}</p>
           )}
         </div>
 
@@ -130,14 +123,14 @@ const Login = () => {
             <input
               id="remember"
               type="checkbox"
-              className="rounded border-input-border text-primary focus:ring-primary"
+              className="rounded border-input text-primary focus:ring-primary"
             />
             <label htmlFor="remember" className="text-sm text-muted-foreground">
               Remember me
             </label>
           </div>
-          <Link 
-            to="/forgot-password" 
+          <Link
+            to="/forgot-password"
             className="text-sm text-primary hover:text-primary-hover font-medium transition-colors"
           >
             Forgot password?
@@ -146,23 +139,32 @@ const Login = () => {
 
         <Button 
           type="submit" 
+          variant="industrial" 
           size="lg" 
           className="w-full"
-          disabled={isSubmitting}
+          disabled={isLoading}
         >
-          {isSubmitting ? "Signing In..." : "Sign In"}
+          {isLoading ? "Signing In..." : "Sign In"}
         </Button>
 
         <div className="text-center">
           <span className="text-muted-foreground">Don't have an account? </span>
-          <Link 
-            to="/register" 
+          <Link
+            to="/register"
             className="text-primary hover:text-primary-hover font-semibold transition-colors"
           >
-            Create Account
+            Sign up
           </Link>
         </div>
       </form>
+
+      {/* Security note */}
+      <div className="mt-6 p-4 bg-muted rounded-lg">
+        <div className="text-xs text-center text-muted-foreground">
+          <div className="font-semibold text-foreground mb-1">Secure Login</div>
+          Your credentials are protected with enterprise-grade security.
+        </div>
+      </div>
     </AuthLayout>
   );
 };

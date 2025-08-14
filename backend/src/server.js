@@ -7,7 +7,7 @@ import rateLimit from 'express-rate-limit';
 
 import { errorHandler } from './middleware/errorHandler.js';
 import { logger } from './utils/logger.js';
-import { connectDB } from './db/connection.js';
+import { testConnection } from './db/simple-connection.js';
 
 // Import routes
 import authRoutes from './routes/auth.js';
@@ -22,8 +22,16 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const API_PREFIX = process.env.API_PREFIX || '/api';
 
-// Connect to database
-connectDB();
+// Test database connection
+testConnection().then(connected => {
+  if (connected) {
+    logger.info('✅ Database connection successful');
+  } else {
+    logger.error('❌ Database connection failed');
+  }
+}).catch(err => {
+  logger.error('❌ Database connection error:', err);
+});
 
 // Security middleware
 app.use(helmet());

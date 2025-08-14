@@ -5,6 +5,8 @@ import Input from "@/components/ui/input";
 import AuthLayout from "@/components/auth/AuthLayout";
 import { Mail, Lock, User, Eye, EyeOff, Check, X, Phone, MapPin } from "lucide-react";
 import { z } from "zod";
+import authService from "@/services/authService";
+import toastService from "@/services/toastService";
 
 // Zod validation schema
 const registerSchema = z.object({
@@ -53,7 +55,7 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Password requirements
   const getPasswordRequirements = (password) => [
@@ -68,37 +70,35 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
     
     try {
-      // Validate form data with Zod
+      // Validate form data
       const validatedData = registerSchema.parse(formData);
-      
-      // Clear any previous errors
       setErrors({});
       
-      console.log("Register submitted:", validatedData);
+      setIsLoading(true);
       
-      // TODO: Handle registration logic here
-      // For now, just simulate a successful registration
-      setTimeout(() => {
-        // Redirect to login page after successful registration
-        navigate('/login');
-      }, 1000);
+      // Call auth service
+      const result = await authService.register(validatedData);
       
+      if (result.success) {
+        toastService.success("Registration successful! Welcome to Wikramasooriya Enterprises.");
+        navigate("/");
+      }
     } catch (error) {
       if (error instanceof z.ZodError) {
-        // Convert Zod errors to our error format
+        // Validation errors
         const newErrors = {};
         error.errors.forEach((err) => {
           newErrors[err.path[0]] = err.message;
         });
         setErrors(newErrors);
       } else {
-        console.error("Validation error:", error);
+        // API errors
+        toastService.error(error.message);
       }
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
 
@@ -118,63 +118,63 @@ const Register = () => {
       subtitle="Join thousands of businesses managing their industrial parts efficiently"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
-        <Input
-          label="Full Name"
-          name="name"
-          type="text"
-          value={formData.name}
-          onChange={handleChange}
-          icon={User}
-          placeholder="John Smith"
-          error={errors.name}
+        <Input 
+          label="Full Name" 
+          name="name" 
+          type="text" 
+          value={formData.name} 
+          onChange={handleChange} 
+          icon={User} 
+          placeholder="John Smith" 
+          error={errors.name} 
         />
-
-        <Input
-          label="Email Address"
-          name="email"
-          type="email"
-          value={formData.email}
-          onChange={handleChange}
-          icon={Mail}
-          placeholder="your.email@company.com"
-          error={errors.email}
+        
+        <Input 
+          label="Email Address" 
+          name="email" 
+          type="email" 
+          value={formData.email} 
+          onChange={handleChange} 
+          icon={Mail} 
+          placeholder="your.email@company.com" 
+          error={errors.email} 
         />
-
-        <Input
-          label="Mobile Number"
-          name="mobile"
-          type="tel"
-          value={formData.mobile}
-          onChange={handleChange}
-          icon={Phone}
-          placeholder="+94 71 234 5678"
-          error={errors.mobile}
+        
+        <Input 
+          label="Mobile Number" 
+          name="mobile" 
+          type="tel" 
+          value={formData.mobile} 
+          onChange={handleChange} 
+          icon={Phone} 
+          placeholder="+94 71 234 5678" 
+          error={errors.mobile} 
         />
-
-        <Input
-          label="Location"
-          name="location"
-          type="text"
-          value={formData.location}
-          onChange={handleChange}
-          icon={MapPin}
-          placeholder="Colombo, Sri Lanka"
-          error={errors.location}
+        
+        <Input 
+          label="Location" 
+          name="location" 
+          type="text" 
+          value={formData.location} 
+          onChange={handleChange} 
+          icon={MapPin} 
+          placeholder="Colombo, Sri Lanka" 
+          error={errors.location} 
         />
-
+        
         <div className="space-y-2">
           <label className="text-sm font-medium text-foreground">
             Password
           </label>
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground pointer-events-none z-10" />
+            <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground z-10 pointer-events-none" />
             <input
               name="password"
               type={showPassword ? "text" : "password"}
               value={formData.password}
               onChange={handleChange}
               placeholder="Create a strong password"
-              className="flex h-10 w-full rounded-md border border-input bg-background pl-10 pr-12 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full pl-10 pr-12 py-3 border border-input rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-colors"
             />
             <button
               type="button"
@@ -184,7 +184,7 @@ const Register = () => {
               {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
             </button>
           </div>
-
+          
           {/* Password Requirements */}
           {formData.password && (
             <div className="mt-3 space-y-2">
@@ -193,11 +193,11 @@ const Register = () => {
                 {passwordRequirements.map((req, index) => (
                   <div key={index} className="flex items-center gap-2 text-xs">
                     {req.met ? (
-                      <Check className="h-3 w-3 text-green-500" />
+                      <Check className="h-3 w-3 text-green-600" />
                     ) : (
                       <X className="h-3 w-3 text-muted-foreground" />
                     )}
-                    <span className={req.met ? "text-green-500" : "text-muted-foreground"}>
+                    <span className={req.met ? "text-green-600" : "text-muted-foreground"}>
                       {req.text}
                     </span>
                   </div>
@@ -207,23 +207,23 @@ const Register = () => {
           )}
           
           {errors.password && (
-            <p className="text-sm text-red-500 mt-1">{errors.password}</p>
+            <p className="text-sm text-destructive mt-1">{errors.password}</p>
           )}
         </div>
-
+        
         <div className="space-y-2">
           <label className="text-sm font-medium text-foreground">
             Confirm Password
           </label>
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground pointer-events-none z-10" />
+            <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground z-10 pointer-events-none" />
             <input
               name="confirmPassword"
               type={showConfirmPassword ? "text" : "password"}
               value={formData.confirmPassword}
               onChange={handleChange}
               placeholder="Confirm your password"
-              className="flex h-10 w-full rounded-md border border-input bg-background pl-10 pr-12 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full pl-10 pr-12 py-3 border border-input rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-colors"
             />
             <button
               type="button"
@@ -233,18 +233,17 @@ const Register = () => {
               {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
             </button>
           </div>
-          
           {errors.confirmPassword && (
-            <p className="text-sm text-red-500 mt-1">{errors.confirmPassword}</p>
+            <p className="text-sm text-destructive mt-1">{errors.confirmPassword}</p>
           )}
         </div>
-
+        
         <div className="flex items-start space-x-2">
           <input
             id="terms"
             type="checkbox"
             required
-            className="mt-1 rounded border-input-border text-primary focus:ring-primary"
+            className="mt-1 rounded border-input text-primary focus:ring-primary"
           />
           <label htmlFor="terms" className="text-sm text-muted-foreground">
             I agree to the{" "}
@@ -257,20 +256,21 @@ const Register = () => {
             </Link>
           </label>
         </div>
-
+        
         <Button 
           type="submit" 
+          variant="industrial" 
           size="lg" 
           className="w-full"
-          disabled={isSubmitting}
+          disabled={isLoading}
         >
-          {isSubmitting ? "Creating Account..." : "Create Account"}
+          {isLoading ? "Creating Account..." : "Create Account"}
         </Button>
-
+        
         <div className="text-center">
           <span className="text-muted-foreground">Already have an account? </span>
-          <Link 
-            to="/login" 
+          <Link
+            to="/login"
             className="text-primary hover:text-primary-hover font-semibold transition-colors"
           >
             Sign In

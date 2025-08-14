@@ -13,7 +13,7 @@ Write-Host "📋 Creating complete database schema..." -ForegroundColor Yellow
 # Run the complete schema creation script
 try {
     # Use psql to execute the SQL file
-    $env:PGPASSWORD = "SecretPass123"
+    $env:PGPASSWORD = "Abcd@1234"
     
     Write-Host "🔧 Creating tables and schema..." -ForegroundColor Cyan
     

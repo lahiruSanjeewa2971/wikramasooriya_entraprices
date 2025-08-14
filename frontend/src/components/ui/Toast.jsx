@@ -1,121 +1,119 @@
-import { useEffect, useState } from 'react'
-import { CheckCircle, XCircle, Info, AlertTriangle, X } from 'lucide-react'
+import React, { useState, useEffect } from 'react';
+import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
+import toastService from '@/services/toastService';
 
-const Toast = ({ 
-  show = false, 
-  message = '', 
-  type = 'info', 
-  duration = 5000, 
-  onClose,
-  position = 'top-right'
-}) => {
-  const [isVisible, setIsVisible] = useState(show)
+const Toast = ({ toast, onRemove }) => {
+  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    setIsVisible(show)
-  }, [show])
+    // Show toast with animation
+    const timer = setTimeout(() => setIsVisible(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
 
-  useEffect(() => {
-    if (isVisible && duration > 0) {
-      const timer = setTimeout(() => {
-        handleClose()
-      }, duration)
-
-      return () => clearTimeout(timer)
-    }
-  }, [isVisible, duration])
-
-  const handleClose = () => {
-    setIsVisible(false)
-    if (onClose) {
-      onClose()
-    }
-  }
-
-  if (!isVisible) return null
+  const handleRemove = () => {
+    setIsVisible(false);
+    setTimeout(() => onRemove(toast.id), 300);
+  };
 
   const getIcon = () => {
-    switch (type) {
+    switch (toast.type) {
       case 'success':
-        return <CheckCircle className="h-5 w-5 text-green-500" />
+        return <CheckCircle className="w-5 h-5 text-green-600" />;
       case 'error':
-        return <XCircle className="h-5 w-5 text-red-500" />
+        return <AlertCircle className="w-5 h-5 text-red-600" />;
       case 'warning':
-        return <AlertTriangle className="h-5 w-5 text-yellow-500" />
+        return <AlertTriangle className="w-5 h-5 text-yellow-600" />;
+      case 'info':
+        return <Info className="w-5 h-5 text-blue-600" />;
       default:
-        return <Info className="h-5 w-5 text-blue-500" />
+        return <Info className="w-5 h-5 text-blue-600" />;
     }
-  }
+  };
 
-  const getBgColor = () => {
-    switch (type) {
+  const getBackgroundColor = () => {
+    switch (toast.type) {
       case 'success':
-        return 'bg-green-50 border-green-200'
+        return 'bg-green-50 border-green-200';
       case 'error':
-        return 'bg-red-50 border-red-200'
+        return 'bg-red-50 border-red-200';
       case 'warning':
-        return 'bg-yellow-50 border-yellow-200'
+        return 'bg-yellow-50 border-yellow-200';
+      case 'info':
+        return 'bg-blue-50 border-blue-200';
       default:
-        return 'bg-blue-50 border-blue-200'
+        return 'bg-blue-50 border-blue-200';
     }
-  }
-
-  const getTextColor = () => {
-    switch (type) {
-      case 'success':
-        return 'text-green-800'
-      case 'error':
-        return 'text-red-800'
-      case 'warning':
-        return 'text-yellow-800'
-      default:
-        return 'text-blue-800'
-    }
-  }
-
-  const getPositionClasses = () => {
-    switch (position) {
-      case 'top-left':
-        return 'top-4 left-4'
-      case 'top-center':
-        return 'top-4 left-1/2 transform -translate-x-1/2'
-      case 'top-right':
-        return 'top-4 right-4'
-      case 'bottom-left':
-        return 'bottom-4 left-4'
-      case 'bottom-center':
-        return 'bottom-4 left-1/2 transform -translate-x-1/2'
-      case 'bottom-right':
-        return 'bottom-4 right-4'
-      default:
-        return 'top-4 right-4'
-    }
-  }
+  };
 
   return (
-    <div className={`fixed ${getPositionClasses()} z-50 animate-fade-in`}>
-      <div className={`${getBgColor()} border rounded-lg shadow-lg p-4 max-w-sm`}>
-        <div className="flex items-start">
-          <div className="flex-shrink-0">
-            {getIcon()}
-          </div>
-          <div className="ml-3 flex-1">
-            <p className={`text-sm font-medium ${getTextColor()}`}>
-              {message}
-            </p>
-          </div>
-          <div className="ml-4 flex-shrink-0">
-            <button
-              onClick={handleClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
+    <div
+      className={`${getBackgroundColor()} border rounded-lg p-4 shadow-lg transition-all duration-300 transform ${
+        isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
+      }`}
+    >
+      <div className="flex items-start space-x-3">
+        {getIcon()}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-gray-900">{toast.message}</p>
         </div>
+        <button
+          onClick={handleRemove}
+          className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <X className="w-4 h-4" />
+        </button>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Toast
+const ToastContainer = () => {
+  const [toasts, setToasts] = useState([]);
+
+  useEffect(() => {
+    const handleShowToast = (event) => {
+      const newToast = event.detail;
+      setToasts(prev => [...prev, newToast]);
+    };
+
+    const handleRemoveToast = (event) => {
+      const { id } = event.detail;
+      setToasts(prev => prev.filter(toast => toast.id !== id));
+    };
+
+    const handleClearToasts = () => {
+      setToasts([]);
+    };
+
+    window.addEventListener('toast:show', handleShowToast);
+    window.addEventListener('toast:remove', handleRemoveToast);
+    window.addEventListener('toast:clear', handleClearToasts);
+
+    return () => {
+      window.removeEventListener('toast:show', handleShowToast);
+      window.removeEventListener('toast:remove', handleRemoveToast);
+      window.removeEventListener('toast:clear', handleClearToasts);
+    };
+  }, []);
+
+  const removeToast = (id) => {
+    toastService.remove(id);
+  };
+
+  if (toasts.length === 0) return null;
+
+  return (
+    <div className="fixed top-4 right-4 z-50 space-y-3 max-w-sm">
+      {toasts.map((toast) => (
+        <Toast
+          key={toast.id}
+          toast={toast}
+          onRemove={removeToast}
+        />
+      ))}
+    </div>
+  );
+};
+
+export default ToastContainer;

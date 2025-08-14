@@ -1,261 +1,178 @@
 import { AppError } from '../middleware/errorHandler.js';
-import { Cart, CartItem, Product } from '../models/index.js';
+import { simpleCartService } from '../services/simpleCartService.js';
 
 export class CartController {
   static async getCart(req, res) {
-    const userId = req.user.id;
-
-    // Get or create cart
-    let cart = await Cart.findOne({
-      where: { user_id: userId, status: 'active' },
-      include: [
-        {
-          model: CartItem,
-          as: 'items',
-          include: [
-            {
-              model: Product,
-              as: 'product',
-              attributes: ['id', 'name', 'sku', 'image_url', 'price', 'stock_qty']
-            }
-          ]
-        }
-      ]
-    });
-
-    if (!cart) {
-      cart = await Cart.create({
-        user_id: userId,
-        status: 'active'
-      });
-    }
-
-    res.json({
-      success: true,
-      data: {
-        cart
+    try {
+      const userId = req.user?.userId || req.user?.id;
+      
+      if (!userId) {
+        throw new AppError('User not authenticated', 401, 'NOT_AUTHENTICATED');
       }
-    });
+
+      const cart = await simpleCartService.getUserCart(userId);
+
+      res.json({
+        success: true,
+        data: {
+          cart
+        }
+      });
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      throw new AppError(error.message, 500, 'CART_FETCH_ERROR');
+    }
   }
 
   static async addItem(req, res) {
-    const userId = req.user.id;
-    const { productId, qty } = req.body;
+    try {
+      const userId = req.user?.userId || req.user?.id;
+      
+      if (!userId) {
+        throw new AppError('User not authenticated', 401, 'NOT_AUTHENTICATED');
+      }
 
-    // Get or create cart
-    let cart = await Cart.findOne({
-      where: { user_id: userId, status: 'active' }
-    });
+      const { productId, qty } = req.body;
 
-    if (!cart) {
-      cart = await Cart.create({
-        user_id: userId,
-        status: 'active'
+      if (!productId || !qty) {
+        throw new AppError('Product ID and quantity are required', 400, 'MISSING_FIELDS');
+      }
+
+      if (qty <= 0) {
+        throw new AppError('Quantity must be greater than 0', 400, 'INVALID_QUANTITY');
+      }
+
+      const cart = await simpleCartService.addItemToCart(userId, productId, qty);
+
+      res.json({
+        success: true,
+        message: 'Item added to cart successfully',
+        data: {
+          cart
+        }
       });
-    }
-
-    // Check if product exists and has stock
-    const product = await Product.findByPk(productId);
-    if (!product || !product.is_active) {
-      throw new AppError('Product not found', 404, 'PRODUCT_NOT_FOUND');
-    }
-
-    if (product.stock_qty < qty) {
-      throw new AppError(
-        `Only ${product.stock_qty} left in stock`,
-        400,
-        'INSUFFICIENT_STOCK'
-      );
-    }
-
-    // Check if item already exists in cart
-    let cartItem = await CartItem.findOne({
-      where: { cart_id: cart.id, product_id: productId }
-    });
-
-    if (cartItem) {
-      // Update quantity
-      const newQty = cartItem.qty + qty;
-      if (product.stock_qty < newQty) {
-        throw new AppError(
-          `Only ${product.stock_qty} left in stock`,
-          400,
-          'INSUFFICIENT_STOCK'
-        );
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      
+      if (error.message.includes('Product not found')) {
+        throw new AppError('Product not found', 404, 'PRODUCT_NOT_FOUND');
       }
-
-      await cartItem.update({ qty: newQty });
-    } else {
-      // Create new cart item
-      cartItem = await CartItem.create({
-        cart_id: cart.id,
-        product_id: productId,
-        qty,
-        price_at_add: product.price
-      });
-    }
-
-    // Refresh cart data
-    await cart.reload({
-      include: [
-        {
-          model: CartItem,
-          as: 'items',
-          include: [
-            {
-              model: Product,
-              as: 'product',
-              attributes: ['id', 'name', 'sku', 'image_url', 'price', 'stock_qty']
-            }
-          ]
-        }
-      ]
-    });
-
-    res.json({
-      success: true,
-      message: 'Item added to cart successfully',
-      data: {
-        cart
+      if (error.message.includes('Only')) {
+        throw new AppError(error.message, 400, 'INSUFFICIENT_STOCK');
       }
-    });
-  }
-
-  static async updateItem(req, res) {
-    const userId = req.user.id;
-    const { id } = req.params;
-    const { qty } = req.body;
-
-    // Get cart item
-    const cartItem = await CartItem.findOne({
-      where: { id },
-      include: [
-        {
-          model: Cart,
-          as: 'cart',
-          where: { user_id: userId, status: 'active' }
-        },
-        {
-          model: Product,
-          as: 'product'
-        }
-      ]
-    });
-
-    if (!cartItem) {
-      throw new AppError('Cart item not found', 404, 'CART_ITEM_NOT_FOUND');
+      
+      throw new AppError(error.message, 500, 'ADD_ITEM_ERROR');
     }
-
-    // Check stock availability
-    if (cartItem.product.stock_qty < qty) {
-      throw new AppError(
-        `Only ${cartItem.product.stock_qty} left in stock`,
-        400,
-        'INSUFFICIENT_STOCK'
-      );
-    }
-
-    // Update quantity
-    await cartItem.update({ qty });
-
-    // Refresh cart data
-    const cart = await Cart.findOne({
-      where: { user_id: userId, status: 'active' },
-      include: [
-        {
-          model: CartItem,
-          as: 'items',
-          include: [
-            {
-              model: Product,
-              as: 'product',
-              attributes: ['id', 'name', 'sku', 'image_url', 'price', 'stock_qty']
-            }
-          ]
-        }
-      ]
-    });
-
-    res.json({
-      success: true,
-      message: 'Cart item updated successfully',
-      data: {
-        cart
-      }
-    });
   }
 
   static async removeItem(req, res) {
-    const userId = req.user.id;
-    const { id } = req.params;
-
-    // Get cart item
-    const cartItem = await CartItem.findOne({
-      where: { id },
-      include: [
-        {
-          model: Cart,
-          as: 'cart',
-          where: { user_id: userId, status: 'active' }
-        }
-      ]
-    });
-
-    if (!cartItem) {
-      throw new AppError('Cart item not found', 404, 'CART_ITEM_NOT_FOUND');
-    }
-
-    // Remove item
-    await cartItem.destroy();
-
-    // Refresh cart data
-    const cart = await Cart.findOne({
-      where: { user_id: userId, status: 'active' },
-      include: [
-        {
-          model: CartItem,
-          as: 'items',
-          include: [
-            {
-              model: Product,
-              as: 'product',
-              attributes: ['id', 'name', 'sku', 'image_url', 'price', 'stock_qty']
-            }
-          ]
-        }
-      ]
-    });
-
-    res.json({
-      success: true,
-      message: 'Item removed from cart successfully',
-      data: {
-        cart
+    try {
+      const userId = req.user?.userId || req.user?.id;
+      
+      if (!userId) {
+        throw new AppError('User not authenticated', 401, 'NOT_AUTHENTICATED');
       }
-    });
+
+      const { itemId } = req.params;
+
+      if (!itemId) {
+        throw new AppError('Item ID is required', 400, 'MISSING_ITEM_ID');
+      }
+
+      const cart = await simpleCartService.removeItemFromCart(userId, itemId);
+
+      res.json({
+        success: true,
+        message: 'Item removed from cart successfully',
+        data: {
+          cart
+        }
+      });
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      
+      if (error.message.includes('Cart item not found')) {
+        throw new AppError('Cart item not found', 404, 'CART_ITEM_NOT_FOUND');
+      }
+      
+      throw new AppError(error.message, 500, 'REMOVE_ITEM_ERROR');
+    }
   }
 
   static async clearCart(req, res) {
-    const userId = req.user.id;
-
-    // Get cart
-    const cart = await Cart.findOne({
-      where: { user_id: userId, status: 'active' }
-    });
-
-    if (cart) {
-      // Remove all cart items
-      await CartItem.destroy({
-        where: { cart_id: cart.id }
-      });
-    }
-
-    res.json({
-      success: true,
-      message: 'Cart cleared successfully',
-      data: {
-        cart: cart || { items: [], total_amount: 0, item_count: 0 }
+    try {
+      const userId = req.user?.userId || req.user?.id;
+      
+      if (!userId) {
+        throw new AppError('User not authenticated', 401, 'NOT_AUTHENTICATED');
       }
-    });
+
+      const cart = await simpleCartService.clearCart(userId);
+
+      res.json({
+        success: true,
+        message: 'Cart cleared successfully',
+        data: {
+          cart
+        }
+      });
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      throw new AppError(error.message, 500, 'CLEAR_CART_ERROR');
+    }
+  }
+
+  static async updateItemQuantity(req, res) {
+    try {
+      const userId = req.user?.userId || req.user?.id;
+      
+      if (!userId) {
+        throw new AppError('User not authenticated', 401, 'NOT_AUTHENTICATED');
+      }
+
+      const { itemId } = req.params;
+      const { qty } = req.body;
+
+      if (!itemId || qty === undefined) {
+        throw new AppError('Item ID and quantity are required', 400, 'MISSING_FIELDS');
+      }
+
+      if (qty <= 0) {
+        // If quantity is 0 or negative, remove the item
+        const cart = await simpleCartService.removeItemFromCart(userId, itemId);
+        
+        res.json({
+          success: true,
+          message: 'Item removed from cart successfully',
+          data: {
+            cart
+          }
+        });
+      } else {
+        // Update quantity by removing and re-adding with new quantity
+        const cart = await simpleCartService.removeItemFromCart(userId, itemId);
+        
+        // Get the product ID from the removed item (we'll need to store this temporarily)
+        // For now, we'll require the product ID in the request body
+        const { productId } = req.body;
+        
+        if (!productId) {
+          throw new AppError('Product ID is required for quantity update', 400, 'MISSING_PRODUCT_ID');
+        }
+
+        const updatedCart = await simpleCartService.addItemToCart(userId, productId, qty);
+
+        res.json({
+          success: true,
+          message: 'Item quantity updated successfully',
+          data: {
+            cart: updatedCart
+          }
+        });
+      }
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      throw new AppError(error.message, 500, 'UPDATE_QUANTITY_ERROR');
+    }
   }
 }

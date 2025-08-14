@@ -230,7 +230,7 @@ SELECT 'contacts', COUNT(*) FROM contacts;
 & "C:\Program Files\PostgreSQL\17\bin\psql.exe" -U postgres -f "db\init\setup.sql"
 
 # 3. Create complete schema with new fields
-$env:PGPASSWORD = "SecretPass123"
+$env:PGPASSWORD = "Abcd@1234"
 & "C:\Program Files\PostgreSQL\17\bin\psql.exe" -U wikadmin -d wik_db -f "db\init\create-tables.sql"
 ```
 

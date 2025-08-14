@@ -1,142 +1,132 @@
-import bcrypt from 'bcryptjs';
 import { AppError } from '../middleware/errorHandler.js';
-import { generateTokens } from '../utils/jwt.js';
-import { User, Cart } from '../models/index.js';
+import { simpleAuthService } from '../services/simpleAuthService.js';
 
 export class AuthController {
   static async register(req, res) {
-    const { name, email, mobile, location, password } = req.body;
+    try {
+      const { name, email, mobile, location, password } = req.body;
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ where: { email } });
-    if (existingUser) {
-      throw new AppError('User with this email already exists', 409, 'USER_EXISTS');
-    }
-
-    // Check if mobile number already exists
-    const existingMobile = await User.findOne({ where: { mobile } });
-    if (existingMobile) {
-      throw new AppError('User with this mobile number already exists', 409, 'MOBILE_EXISTS');
-    }
-
-    // Create user
-    const user = await User.create({
-      name,
-      email,
-      mobile,
-      location,
-      password_hash: password // Will be hashed by model hook
-    });
-
-    // Create cart for user
-    await Cart.create({
-      user_id: user.id,
-      status: 'active'
-    });
-
-    // Generate tokens
-    const { accessToken, refreshToken } = generateTokens(user.id);
-
-    // Update last login
-    await user.update({ last_login: new Date() });
-
-    res.status(201).json({
-      success: true,
-      message: 'User registered successfully',
-      data: {
-        user: user.toJSON(),
-        tokens: {
-          accessToken,
-          refreshToken
-        }
+      // Validate required fields
+      if (!name || !email || !mobile || !location || !password) {
+        throw new AppError('All fields are required', 400, 'MISSING_FIELDS');
       }
-    });
+
+      // Register user using simple service
+      const result = await simpleAuthService.register({
+        name,
+        email,
+        mobile,
+        location,
+        password
+      });
+
+      res.status(201).json({
+        success: true,
+        message: 'User registered successfully',
+        data: {
+          user: result.user,
+          tokens: result.tokens
+        }
+      });
+    } catch (error) {
+      if (error.message.includes('already exists')) {
+        throw new AppError(error.message, 409, 'USER_EXISTS');
+      }
+      throw new AppError(error.message, 500, 'REGISTRATION_ERROR');
+    }
   }
 
   static async login(req, res) {
-    const { email, password } = req.body;
+    try {
+      const { email, password } = req.body;
 
-    // Find user
-    const user = await User.findOne({ where: { email } });
-    if (!user || !user.is_active) {
-      throw new AppError('Invalid credentials', 401, 'INVALID_CREDENTIALS');
-    }
-
-    // Validate password
-    const isValidPassword = await user.validatePassword(password);
-    if (!isValidPassword) {
-      throw new AppError('Invalid credentials', 401, 'INVALID_CREDENTIALS');
-    }
-
-    // Generate tokens
-    const { accessToken, refreshToken } = generateTokens(user.id);
-
-    // Update last login
-    await user.update({ last_login: new Date() });
-
-    res.json({
-      success: true,
-      message: 'Login successful',
-      data: {
-        user: user.toJSON(),
-        tokens: {
-          accessToken,
-          refreshToken
-        }
+      // Validate required fields
+      if (!email || !password) {
+        throw new AppError('Email and password are required', 400, 'MISSING_FIELDS');
       }
-    });
+
+      // Login user using simple service
+      const result = await simpleAuthService.login(email, password);
+
+      res.json({
+        success: true,
+        message: 'Login successful',
+        data: {
+          user: result.user,
+          tokens: result.tokens
+        }
+      });
+    } catch (error) {
+      if (error.message.includes('Invalid credentials')) {
+        throw new AppError('Invalid credentials', 401, 'INVALID_CREDENTIALS');
+      }
+      throw new AppError(error.message, 500, 'LOGIN_ERROR');
+    }
   }
 
   static async getProfile(req, res) {
-    const user = req.user;
-
-    res.json({
-      success: true,
-      data: {
-        user: user.toJSON()
+    try {
+      const userId = req.user?.userId || req.user?.id;
+      
+      if (!userId) {
+        throw new AppError('User not authenticated', 401, 'NOT_AUTHENTICATED');
       }
-    });
+
+      const user = await simpleAuthService.getUserProfile(userId);
+      
+      if (!user) {
+        throw new AppError('User not found', 404, 'USER_NOT_FOUND');
+      }
+
+      res.json({
+        success: true,
+        data: {
+          user
+        }
+      });
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      throw new AppError(error.message, 500, 'PROFILE_FETCH_ERROR');
+    }
   }
 
   static async refreshToken(req, res) {
-    const { refreshToken } = req.body;
-
-    if (!refreshToken) {
-      throw new AppError('Refresh token required', 400, 'REFRESH_TOKEN_MISSING');
-    }
-
     try {
-      // Verify refresh token
-      const jwt = await import('jsonwebtoken');
-      const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
-      
-      if (decoded.type !== 'refresh') {
-        throw new AppError('Invalid token type', 401, 'INVALID_TOKEN_TYPE');
+      const { refreshToken } = req.body;
+
+      if (!refreshToken) {
+        throw new AppError('Refresh token required', 400, 'REFRESH_TOKEN_MISSING');
       }
 
-      // Check if user exists and is active
-      const user = await User.findByPk(decoded.userId);
+      // Verify refresh token
+      const decoded = simpleAuthService.verifyToken(refreshToken);
+      
+      // Get user profile
+      const user = await simpleAuthService.getUserProfile(decoded.userId);
       if (!user || !user.is_active) {
         throw new AppError('User not found or inactive', 401, 'USER_NOT_FOUND');
       }
 
       // Generate new tokens
-      const tokens = generateTokens(user.id);
+      const jwt = await import('jsonwebtoken');
+      const accessToken = jwt.default.sign({ userId: user.id }, process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production', { expiresIn: '15m' });
+      const newRefreshToken = jwt.default.sign({ userId: user.id }, process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production', { expiresIn: '7d' });
 
       res.json({
         success: true,
         message: 'Token refreshed successfully',
         data: {
-          tokens
+          tokens: {
+            accessToken,
+            refreshToken: newRefreshToken
+          }
         }
       });
     } catch (error) {
-      if (error.name === 'JsonWebTokenError') {
+      if (error.message.includes('Invalid token')) {
         throw new AppError('Invalid refresh token', 401, 'INVALID_REFRESH_TOKEN');
-      } else if (error.name === 'TokenExpiredError') {
-        throw new AppError('Refresh token expired', 401, 'REFRESH_TOKEN_EXPIRED');
       }
-      throw error;
+      throw new AppError(error.message, 500, 'TOKEN_REFRESH_ERROR');
     }
   }
 

@@ -18,29 +18,7 @@ export const errorHandler = (err, req, res, next) => {
   let details = null;
 
   // Handle specific error types
-  if (err.name === 'SequelizeValidationError') {
-    statusCode = 400;
-    code = 'VALIDATION_ERROR';
-    message = 'Validation failed';
-    details = err.errors.map(e => ({
-      field: e.path,
-      message: e.message,
-      value: e.value
-    }));
-  } else if (err.name === 'SequelizeUniqueConstraintError') {
-    statusCode = 409;
-    code = 'DUPLICATE_ERROR';
-    message = 'Resource already exists';
-    details = err.errors.map(e => ({
-      field: e.path,
-      message: e.message,
-      value: e.value
-    }));
-  } else if (err.name === 'SequelizeForeignKeyConstraintError') {
-    statusCode = 400;
-    code = 'FOREIGN_KEY_ERROR';
-    message = 'Invalid reference';
-  } else if (err.name === 'JsonWebTokenError') {
+  if (err.name === 'JsonWebTokenError') {
     statusCode = 401;
     code = 'INVALID_TOKEN';
     message = 'Invalid or expired token';

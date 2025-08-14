@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { AppError } from './errorHandler.js';
-import { User } from '../models/index.js';
+import { simpleAuthService } from '../services/simpleAuthService.js';
 
 export const authenticateToken = async (req, res, next) => {
   try {
@@ -12,10 +12,10 @@ export const authenticateToken = async (req, res, next) => {
     }
 
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = simpleAuthService.verifyToken(token);
     
     // Get user from database
-    const user = await User.findByPk(decoded.userId);
+    const user = await simpleAuthService.getUserProfile(decoded.userId);
     if (!user || !user.is_active) {
       throw new AppError('User not found or inactive', 401, 'USER_NOT_FOUND');
     }
@@ -24,10 +24,8 @@ export const authenticateToken = async (req, res, next) => {
     req.user = user;
     next();
   } catch (error) {
-    if (error.name === 'JsonWebTokenError') {
+    if (error.message.includes('Invalid token')) {
       next(new AppError('Invalid token', 401, 'INVALID_TOKEN'));
-    } else if (error.name === 'TokenExpiredError') {
-      next(new AppError('Token expired', 401, 'TOKEN_EXPIRED'));
     } else {
       next(error);
     }
@@ -54,8 +52,8 @@ export const optionalAuth = async (req, res, next) => {
     const token = authHeader && authHeader.split(' ')[1];
 
     if (token) {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      const user = await User.findByPk(decoded.userId);
+      const decoded = simpleAuthService.verifyToken(token);
+      const user = await simpleAuthService.getUserProfile(decoded.userId);
       if (user && user.is_active) {
         req.user = user;
       }

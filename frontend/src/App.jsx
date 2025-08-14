@@ -2,6 +2,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import TopNav from "@/components/layout/TopNav.jsx";
+import Footer from "@/components/layout/Footer.jsx";
+import ScrollToTop from "@/components/ui/ScrollToTop.jsx";
+import ToastContainer from "@/components/ui/Toast.jsx";
 import Index from "./pages/Index.jsx";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
@@ -14,34 +17,37 @@ import NotFound from "./pages/NotFound.jsx";
 
 const queryClient = new QueryClient();
 
-// Component to conditionally render TopNav
+// Component to conditionally render TopNav and Footer
 const AppContent = () => {
   const location = useLocation();
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
   
-  return (
-    <>
-      {!isAuthPage && <TopNav />}
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<Index />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/products" element={<Products />} />
-        <Route path="/products/:id" element={<ProductDetail />} />
-        <Route path="/contact" element={<Contact />} />
-        
-        {/* Auth Routes */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        
-        {/* Protected Routes */}
-        <Route path="/cart" element={<Cart />} />
-        
-        {/* Catch-all Route */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </>
-  );
+        return (
+        <>
+          <ScrollToTop />
+          {!isAuthPage && <TopNav />}
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<Index />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/products" element={<Products />} />
+            <Route path="/products/:id" element={<ProductDetail />} />
+            <Route path="/contact" element={<Contact />} />
+            
+            {/* Auth Routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            
+            {/* Protected Routes */}
+            <Route path="/cart" element={<Cart />} />
+            
+            {/* Catch-all Route */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+          {!isAuthPage && <Footer />}
+          <ToastContainer />
+        </>
+      );
 };
 
 const App = () => (
