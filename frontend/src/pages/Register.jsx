@@ -259,12 +259,18 @@ const Register = () => {
         
         <Button 
           type="submit" 
-          variant="industrial" 
           size="lg" 
-          className="w-full"
+          className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
           disabled={isLoading}
         >
-          {isLoading ? "Creating Account..." : "Create Account"}
+          {isLoading ? (
+            <>
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+              Creating Account...
+            </>
+          ) : (
+            "Create Account"
+          )}
         </Button>
         
         <div className="text-center">

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import Input from '@/components/ui/input';
-import { Mail, MapPin, Phone, Send } from 'lucide-react';
+import { Mail, MapPin, Phone, Send, Loader2 } from 'lucide-react';
+import contactService from '@/services/contactService';
+import toastService from '@/services/toastService';
 
 const Footer = () => {
   const [contactForm, setContactForm] = useState({
@@ -14,16 +15,38 @@ const Footer = () => {
 
   const handleContactSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate form
+    if (!contactForm.email.trim() || !contactForm.title.trim() || !contactForm.message.trim()) {
+      toastService.show('Please fill in all fields', 'warning');
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(contactForm.email)) {
+      toastService.show('Please enter a valid email address', 'warning');
+      return;
+    }
+
     setIsSubmitting(true);
     
-    // Simulate form submission
-    console.log('Contact form submitted:', contactForm);
-    
-    setTimeout(() => {
-      setContactForm({ email: '', title: '', message: '' });
+    try {
+      const response = await contactService.submitContact(contactForm);
+      
+      if (response.success) {
+        toastService.show('Message sent successfully! We\'ll get back to you soon.', 'success');
+        // Reset form
+        setContactForm({ email: '', title: '', message: '' });
+      } else {
+        toastService.show(response.message || 'Failed to send message. Please try again.', 'error');
+      }
+    } catch (error) {
+      console.error('Contact form error:', error);
+      toastService.show('Failed to send message. Please try again later.', 'error');
+    } finally {
       setIsSubmitting(false);
-      // TODO: Add success message or redirect
-    }, 1000);
+    }
   };
 
   const handleInputChange = (e) => {
@@ -120,26 +143,34 @@ const Footer = () => {
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-white">Get In Touch</h3>
             <form onSubmit={handleContactSubmit} className="space-y-3">
-              <Input
-                label="Email Address"
-                name="email"
-                type="email"
-                value={contactForm.email}
-                onChange={handleInputChange}
-                placeholder="your.email@company.com"
-                required
-                className="h-9"
-              />
-              <Input
-                label="Subject"
-                name="title"
-                type="text"
-                value={contactForm.title}
-                onChange={handleInputChange}
-                placeholder="How can we help?"
-                required
-                className="h-9"
-              />
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-white">
+                  Email Address
+                </label>
+                <input
+                  name="email"
+                  type="email"
+                  value={contactForm.email}
+                  onChange={handleInputChange}
+                  placeholder="your.email@company.com"
+                  required
+                  className="flex w-full rounded-md border border-gray-600 bg-gray-800 text-white px-3 py-2 text-sm ring-offset-background placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 h-9"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-white">
+                  Subject
+                </label>
+                <input
+                  name="title"
+                  type="text"
+                  value={contactForm.title}
+                  onChange={handleInputChange}
+                  placeholder="How can we help?"
+                  required
+                  className="flex w-full rounded-md border border-gray-600 bg-gray-800 text-white px-3 py-2 text-sm ring-offset-background placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 h-9"
+                />
+              </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-white">
                   Message
@@ -161,7 +192,10 @@ const Footer = () => {
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
-                  "Sending..."
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Sending...
+                  </>
                 ) : (
                   <>
                     <Send className="h-4 w-4 mr-2" />

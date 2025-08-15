@@ -55,7 +55,7 @@ const TopNav = () => {
   const loadCartItemCount = async () => {
     try {
       const count = await cartService.getCartItemCount();
-      setCartItemCount(count);
+      setCartItemCount(count || 0);
     } catch (error) {
       console.error('Failed to load cart count:', error);
     }
@@ -108,7 +108,7 @@ const TopNav = () => {
             {/* Cart Icon */}
             <Link to="/cart" className="relative p-2 text-gray-700 hover:text-primary transition-colors">
               <ShoppingCart className="w-6 h-6" />
-              {cartItemCount > 0 && (
+              {cartItemCount >= 0 && (
                 <span className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                   {cartItemCount > 99 ? '99+' : cartItemCount}
                 </span>

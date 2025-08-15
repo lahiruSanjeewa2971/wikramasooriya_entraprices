@@ -24,6 +24,35 @@ export class CartController {
     }
   }
 
+  static async getCartCount(req, res) {
+    try {
+      const userId = req.user?.userId || req.user?.id;
+      
+      if (!userId) {
+        throw new AppError('User not authenticated', 401, 'NOT_AUTHENTICATED');
+      }
+
+      const cart = await simpleCartService.getUserCart(userId);
+      const count = cart ? cart.item_count || 0 : 0;
+
+      res.json({
+        success: true,
+        data: {
+          count
+        }
+      });
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      // Return 0 count if there's an error
+      res.json({
+        success: true,
+        data: {
+          count: 0
+        }
+      });
+    }
+  }
+
   static async addItem(req, res) {
     try {
       const userId = req.user?.userId || req.user?.id;

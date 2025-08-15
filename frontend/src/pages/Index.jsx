@@ -165,9 +165,9 @@ const Index = () => {
                 <p className="text-muted-foreground text-sm md:text-base leading-relaxed">
                   {selectedProduct.description}
                 </p>
-                <Button variant="outline" size="sm" className="mt-2">
+                {/* <Button variant="outline" size="sm" className="mt-2">
                   Learn More
-                </Button>
+                </Button> */}
               </div>
             </div>
           </div>
@@ -267,12 +267,10 @@ const Index = () => {
               </div>
               
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                <button className="bg-primary text-white px-8 py-3 rounded-lg hover:bg-primary-hover transition-colors duration-200 font-semibold">
-                  Explore Products
-                </button>
-                <button className="border-2 border-primary text-primary px-8 py-3 rounded-lg hover:bg-primary hover:text-white transition-all duration-200 font-semibold">
-                  Contact Sales
-                </button>
+                <Button asChild className="bg-primary text-white px-8 py-3 rounded-lg hover:bg-primary-hover transition-colors duration-200 font-semibold">
+                  <Link to="/products">Explore Products</Link>
+                </Button>
+                {/* Removed Contact Sales button */}
               </div>
             </div>
             
@@ -352,7 +350,7 @@ const Index = () => {
          </div>
        </section>
 
-      {/* CTA */}
+      {/* CTA
       <section className="container mx-auto pb-20">
         <div className="rounded-xl border p-8 md:p-10 bg-gradient-to-br from-accent/10 to-secondary/10">
           <h3 className="font-display text-2xl">Ready to source your parts?</h3>
@@ -369,7 +367,7 @@ const Index = () => {
             </Button>
           </div>
         </div>
-      </section>
+      </section> */}
     </main>
   );
 };

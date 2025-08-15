@@ -5,10 +5,10 @@ class AuthService {
   async login(credentials) {
     try {
       const response = await apiClient.post('/auth/login', credentials);
-      const { token, user } = response.data;
+      const { tokens, user } = response.data.data;
       
       // Store token and user data
-      localStorage.setItem('authToken', token);
+      localStorage.setItem('authToken', tokens.accessToken);
       localStorage.setItem('user', JSON.stringify(user));
       
       // Dispatch login event
@@ -25,10 +25,10 @@ class AuthService {
   async register(userData) {
     try {
       const response = await apiClient.post('/auth/register', userData);
-      const { token, user } = response.data;
+      const { tokens, user } = response.data.data;
       
       // Store token and user data
-      localStorage.setItem('authToken', token);
+      localStorage.setItem('authToken', tokens.accessToken);
       localStorage.setItem('user', JSON.stringify(user));
       
       // Dispatch login event

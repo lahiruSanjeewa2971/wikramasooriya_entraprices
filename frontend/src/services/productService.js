@@ -26,7 +26,7 @@ class ProductService {
   // Get products by category
   async getProductsByCategory(category) {
     try {
-      const response = await apiClient.get(`/products/category/${category}`);
+      const response = await apiClient.get('/products', { params: { category } });
       return response.data;
     } catch (error) {
       const message = error.response?.data?.message || 'Failed to fetch products by category.';
@@ -34,10 +34,10 @@ class ProductService {
     }
   }
 
-  // Search products
+  // Search products - using the main products endpoint with search query
   async searchProducts(query) {
     try {
-      const response = await apiClient.get('/products/search', { params: { q: query } });
+      const response = await apiClient.get('/products', { params: { q: query } });
       return response.data;
     } catch (error) {
       const message = error.response?.data?.message || 'Failed to search products.';
@@ -52,6 +52,28 @@ class ProductService {
       return response.data;
     } catch (error) {
       const message = error.response?.data?.message || 'Failed to fetch featured products.';
+      throw new Error(message);
+    }
+  }
+
+  // Get new arrival products
+  async getNewArrivals() {
+    try {
+      const response = await apiClient.get('/products/new');
+      return response.data;
+    } catch (error) {
+      const message = error.response?.data?.message || 'Failed to fetch new arrivals.';
+      throw new Error(message);
+    }
+  }
+
+  // Get all categories
+  async getCategories() {
+    try {
+      const response = await apiClient.get('/products/categories');
+      return response.data;
+    } catch (error) {
+      const message = error.response?.data?.message || 'Failed to fetch categories.';
       throw new Error(message);
     }
   }

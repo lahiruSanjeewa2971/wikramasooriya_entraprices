@@ -29,7 +29,8 @@ const Cart = () => {
     try {
       setLoading(true);
       const cartData = await cartService.getCart();
-      setCart(cartData);
+      console.log('cartData :', cartData)
+      setCart(cartData?.data?.cart );
     } catch (error) {
       toastService.error("Failed to load cart");
       console.error("Error loading cart:", error);

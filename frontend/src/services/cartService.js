@@ -15,9 +15,9 @@ class CartService {
   // Add item to cart
   async addToCart(productId, quantity = 1) {
     try {
-      const response = await apiClient.post('/cart/items', {
+      const response = await apiClient.post('/cart/add', {
         productId,
-        quantity
+        qty: quantity
       });
       
       // Dispatch cart updated event
@@ -31,10 +31,11 @@ class CartService {
   }
 
   // Update cart item quantity
-  async updateCartItem(itemId, quantity) {
+  async updateCartItem(itemId, quantity, productId) {
     try {
-      const response = await apiClient.put(`/cart/items/${itemId}`, {
-        quantity
+      const response = await apiClient.put(`/cart/item/${itemId}`, {
+        qty: quantity,
+        productId
       });
       
       // Dispatch cart updated event
@@ -50,7 +51,7 @@ class CartService {
   // Remove item from cart
   async removeFromCart(itemId) {
     try {
-      const response = await apiClient.delete(`/cart/items/${itemId}`);
+      const response = await apiClient.delete(`/cart/item/${itemId}`);
       
       // Dispatch cart updated event
       window.dispatchEvent(new CustomEvent('cart:updated'));
@@ -65,7 +66,7 @@ class CartService {
   // Clear cart
   async clearCart() {
     try {
-      const response = await apiClient.delete('/cart');
+      const response = await apiClient.delete('/cart/clear');
       
       // Dispatch cart updated event
       window.dispatchEvent(new CustomEvent('cart:updated'));
@@ -103,7 +104,7 @@ class CartService {
   async getCartItemCount() {
     try {
       const response = await apiClient.get('/cart/count');
-      return response.data.count;
+      return response.data.data.count;
     } catch (error) {
       return 0;
     }

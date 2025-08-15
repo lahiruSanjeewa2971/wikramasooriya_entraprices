@@ -14,6 +14,11 @@ router.get('/',
   asyncHandler(CartController.getCart)
 );
 
+// GET /api/cart/count - Get cart item count
+router.get('/count',
+  asyncHandler(CartController.getCartCount)
+);
+
 // POST /api/cart/add - Add item to cart
 router.post('/add',
   validateRequest(cartSchemas.addItem),

@@ -139,12 +139,18 @@ const Login = () => {
 
         <Button 
           type="submit" 
-          variant="industrial" 
           size="lg" 
-          className="w-full"
+          className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
           disabled={isLoading}
         >
-          {isLoading ? "Signing In..." : "Sign In"}
+          {isLoading ? (
+            <>
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+              Signing In...
+            </>
+          ) : (
+            "Sign In"
+          )}
         </Button>
 
         <div className="text-center">
