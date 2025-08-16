@@ -31,11 +31,10 @@ class CartService {
   }
 
   // Update cart item quantity
-  async updateCartItem(itemId, quantity, productId) {
+  async updateCartItem(itemId, quantity) {
     try {
       const response = await apiClient.put(`/cart/item/${itemId}`, {
-        qty: quantity,
-        productId
+        qty: quantity
       });
       
       // Dispatch cart updated event

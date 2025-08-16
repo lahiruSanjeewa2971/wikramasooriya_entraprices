@@ -111,7 +111,8 @@ class NotificationService {
           callback(response.data);
         }
       } catch (error) {
-        console.error('Notification polling error:', error);
+        // Handle polling errors silently in production
+        // console.error('Notification polling error:', error);
       }
     }, 30000); // Poll every 30 seconds
 

@@ -13,7 +13,6 @@ const Cart = () => {
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutOption, setCheckoutOption] = useState('pickup'); // 'pickup' or 'delivery'
 
   // Load cart on component mount
@@ -29,11 +28,17 @@ const Cart = () => {
     try {
       setLoading(true);
       const cartData = await cartService.getCart();
-      console.log('cartData :', cartData)
-      setCart(cartData?.data?.cart );
+      // console.log('cartData :', cartData); // Removed for production
+      
+      if (cartData?.success && cartData?.data?.cart) {
+        setCart(cartData.data.cart);
+      } else {
+        setCart(null);
+      }
     } catch (error) {
-      toastService.error("Failed to load cart");
+      toastService.show("Failed to load cart", "error");
       console.error("Error loading cart:", error);
+      setCart(null);
     } finally {
       setLoading(false);
     }
@@ -46,9 +51,9 @@ const Cart = () => {
       setUpdating(true);
       await cartService.updateCartItem(itemId, newQuantity);
       await loadCart(); // Reload cart to get updated data
-      toastService.success("Cart updated successfully");
+      toastService.show("Cart updated successfully", "success");
     } catch (error) {
-      toastService.error("Failed to update cart");
+      toastService.show("Failed to update cart", "error");
     } finally {
       setUpdating(false);
     }
@@ -58,9 +63,9 @@ const Cart = () => {
     try {
       await cartService.removeFromCart(itemId);
       await loadCart(); // Reload cart to get updated data
-      toastService.success("Item removed from cart");
+      toastService.show("Item removed from cart", "success");
     } catch (error) {
-      toastService.error("Failed to remove item");
+      toastService.show("Failed to remove item", "error");
     }
   };
 
@@ -68,45 +73,22 @@ const Cart = () => {
     try {
       await cartService.clearCart();
       await loadCart(); // Reload cart to get updated data
-      toastService.success("Cart cleared successfully");
+      toastService.show("Cart cleared successfully", "success");
     } catch (error) {
-      toastService.error("Failed to clear cart");
+      toastService.show("Failed to clear cart", "error");
     }
   };
 
   const handleCheckout = async () => {
-    try {
-      setCheckoutLoading(true);
-      
-      const user = authService.getCurrentUser();
-      const checkoutData = {
-        items: cart.items.map(item => ({
-          productId: item.product.id,
-          quantity: item.quantity,
-          price: item.product.price
-        })),
-        totalAmount: cart.totalAmount,
-        userLocation: user.location,
-        checkoutOption
-      };
-
-      if (checkoutOption === 'delivery') {
-        await cartService.checkoutDelivery(checkoutData);
-        toastService.success("Order placed successfully! We'll deliver to your location.");
-      } else {
-        await cartService.checkoutPickup(checkoutData);
-        toastService.success("Order placed successfully! Please pickup from our store.");
-      }
-
-      // Clear cart after successful checkout
-      await cartService.clearCart();
-      navigate('/');
-      
-    } catch (error) {
-      toastService.error(error.message || "Checkout failed. Please try again.");
-    } finally {
-      setCheckoutLoading(false);
-    }
+    // Show notification that checkout feature is coming soon
+    toastService.show("Checkout feature will be developed soon!", "info");
+    
+    // TODO: Implement actual checkout functionality
+    // - Create order in database
+    // - Process payment
+    // - Handle delivery/pickup options
+    // - Send confirmation emails
+    // - Update inventory
   };
 
   const formatPrice = (price) => {
@@ -166,7 +148,9 @@ const Cart = () => {
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Shopping Cart</h1>
-            <p className="text-gray-600">Review your items and proceed to checkout</p>
+            <p className="text-gray-600">
+              Review your items ({cart.item_count} items) and proceed to checkout
+            </p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -193,8 +177,8 @@ const Cart = () => {
                       {/* Product Image */}
                       <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0">
                         <img
-                          src={item.product.imageUrl || "https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=400&h=300&fit=crop"}
-                          alt={item.product.name}
+                          src={item.product_image || "https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=400&h=300&fit=crop"}
+                          alt={item.product_name}
                           className="w-full h-full object-cover"
                         />
                       </div>
@@ -202,13 +186,19 @@ const Cart = () => {
                       {/* Product Info */}
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-gray-900 truncate">
-                          {item.product.name}
+                          {item.product_name}
                         </h3>
                         <p className="text-sm text-gray-600 truncate">
-                          SKU: {item.product.sku}
+                          SKU: {item.product_sku}
                         </p>
                         <p className="text-lg font-bold text-primary">
-                          {formatPrice(item.product.price)}
+                          {formatPrice(item.product_price)}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Stock: {item.product_stock} units
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          Price captured: {formatPrice(item.price_at_add)}
                         </p>
                       </div>
 
@@ -217,18 +207,18 @@ const Cart = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          onClick={() => updateQuantity(item.id, item.qty - 1)}
                           disabled={updating}
                         >
                           <Minus className="w-4 h-4" />
                         </Button>
                         <span className="w-12 text-center font-medium">
-                          {item.quantity}
+                          {item.qty}
                         </span>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          onClick={() => updateQuantity(item.id, item.qty + 1)}
                           disabled={updating}
                         >
                           <Plus className="w-4 h-4" />
@@ -238,7 +228,7 @@ const Cart = () => {
                       {/* Item Total */}
                       <div className="text-right">
                         <p className="font-semibold text-gray-900">
-                          {formatPrice(item.product.price * item.quantity)}
+                          {formatPrice(parseFloat(item.subtotal))}
                         </p>
                       </div>
 
@@ -267,12 +257,13 @@ const Cart = () => {
                   {/* Subtotal */}
                   <div className="flex justify-between">
                     <span className="text-gray-600">Subtotal</span>
-                    <span className="font-medium">{formatPrice(cart.totalAmount)}</span>
+                    <span className="font-medium">{formatPrice(cart.total_amount)}</span>
                   </div>
 
                   {/* Delivery Option */}
                   <div className="space-y-3">
-                    <h4 className="font-medium text-gray-900">Delivery Option</h4>
+                    <h4 className="font-medium text-gray-900">Delivery Option (Preview)</h4>
+                    <p className="text-xs text-gray-500 mb-3">These options will be available when checkout is implemented</p>
                     
                     {/* Pickup Option */}
                     <label className="flex items-center space-x-3 cursor-pointer">
@@ -321,19 +312,18 @@ const Cart = () => {
                   <div className="border-t pt-4">
                     <div className="flex justify-between text-lg font-bold">
                       <span>Total</span>
-                      <span className="text-primary">{formatPrice(cart.totalAmount)}</span>
+                      <span className="text-primary">{formatPrice(cart.total_amount)}</span>
                     </div>
                   </div>
 
                   {/* Checkout Button */}
                   <Button
                     onClick={handleCheckout}
-                    disabled={checkoutLoading}
                     className="w-full"
                     size="lg"
                   >
                     <CreditCard className="w-5 h-5 mr-2" />
-                    {checkoutLoading ? "Processing..." : `Proceed to Checkout`}
+                    Proceed to Checkout (Coming Soon)
                   </Button>
 
                   {/* Continue Shopping */}

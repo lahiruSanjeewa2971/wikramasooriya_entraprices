@@ -38,7 +38,8 @@ apiClient.interceptors.response.use(
     
     // Handle server errors
     if (response?.status >= 500) {
-      console.error('Server Error:', response.data);
+      // Log server errors for monitoring (could be sent to error tracking service)
+      // console.error('Server Error:', response.data);
     }
     
     return Promise.reject(error);

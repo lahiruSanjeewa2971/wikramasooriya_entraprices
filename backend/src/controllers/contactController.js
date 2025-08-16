@@ -1,5 +1,6 @@
 import { AppError } from '../middleware/errorHandler.js';
 import { query } from '../db/simple-connection.js';
+import { logger } from '../utils/logger.js';
 
 export class ContactController {
   static async submitContact(req, res) {
@@ -26,13 +27,13 @@ export class ContactController {
 
       const contact = contactResult.rows[0];
 
-      // In a real application, you would send an email notification here
-      // For now, we'll just log it
-      console.log('Contact form submission:', {
+      // Log the contact submission (for monitoring purposes)
+      logger.info('Contact form submission:', {
         email,
         title,
         message,
-        timestamp: new Date().toISOString()
+        ip: req.ip,
+        userAgent: req.get('User-Agent')
       });
 
       res.status(201).json({

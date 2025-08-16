@@ -4,9 +4,9 @@ import { AppError } from '../middleware/errorHandler.js';
 export const generateTokens = (userId) => {
   try {
     const accessToken = jwt.sign(
-      { userId },
+      { userId: user.id },
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '15m' }
+      { expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '5h' }
     );
 
     const refreshToken = jwt.sign(

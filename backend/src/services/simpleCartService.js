@@ -226,5 +226,67 @@ export const simpleCartService = {
     } finally {
       client.release();
     }
+  },
+
+  // Update cart item quantity
+  async updateCartItem(userId, itemId, newQty) {
+    const client = await getClient();
+    
+    try {
+      await client.query('BEGIN');
+
+      // Get cart item with product details
+      const itemResult = await client.query(`
+        SELECT ci.*, c.user_id, p.stock_qty, p.price
+        FROM cart_items ci
+        JOIN carts c ON ci.cart_id = c.id
+        JOIN products p ON ci.product_id = p.id
+        WHERE ci.id = $1 AND c.user_id = $2
+      `, [itemId, userId]);
+
+      if (itemResult.rows.length === 0) {
+        throw new Error('Cart item not found');
+      }
+
+      const item = itemResult.rows[0];
+
+      // Check stock availability
+      if (item.stock_qty < newQty) {
+        throw new Error(`Only ${item.stock_qty} left in stock`);
+      }
+
+      // Update quantity and subtotal
+      const subtotal = newQty * parseFloat(item.price);
+      
+      await client.query(`
+        UPDATE cart_items 
+        SET qty = $1, subtotal = $2, updated_at = $3
+        WHERE id = $4
+      `, [newQty, subtotal, new Date().toISOString(), itemId]);
+
+      // Update cart totals
+      const totalResult = await client.query(`
+        SELECT SUM(subtotal) as total, COUNT(*) as item_count
+        FROM cart_items WHERE cart_id = $1
+      `, [item.cart_id]);
+
+      const { total, item_count } = totalResult.rows[0];
+      
+      await client.query(`
+        UPDATE carts 
+        SET total_amount = $1, item_count = $2, updated_at = $3
+        WHERE id = $4
+      `, [total || 0, item_count || 0, new Date().toISOString(), item.cart_id]);
+
+      await client.query('COMMIT');
+
+      // Return updated cart
+      return await this.getUserCart(userId);
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 };

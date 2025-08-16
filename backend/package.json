@@ -6,12 +6,14 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
+    "start:validate": "node start-with-validation.js",
     "dev": "nodemon src/server.js",
     "dev:sync": "SYNC_DB=true nodemon src/server.js",
+    "db:validate": "node validate-db-connection.js",
     "db:setup": "powershell -ExecutionPolicy Bypass -File setup-database-simple.ps1",
     "db:setup:batch": "setup-database.bat",
     "db:init": "node src/db/init.js",
-    "db:seed": "node src/db/seed.js",
+    "db:seed": "node seed-simple-db.js",
     "test": "jest",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix"

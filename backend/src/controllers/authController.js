@@ -109,7 +109,7 @@ export class AuthController {
 
       // Generate new tokens
       const jwt = await import('jsonwebtoken');
-      const accessToken = jwt.default.sign({ userId: user.id }, process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production', { expiresIn: '15m' });
+      const accessToken = jwt.default.sign({ userId: user.id }, process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production', { expiresIn: '5h' });
       const newRefreshToken = jwt.default.sign({ userId: user.id }, process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production', { expiresIn: '7d' });
 
       res.json({

@@ -102,7 +102,7 @@ export class CartController {
         throw new AppError('User not authenticated', 401, 'NOT_AUTHENTICATED');
       }
 
-      const { itemId } = req.params;
+      const { id: itemId } = req.params;
 
       if (!itemId) {
         throw new AppError('Item ID is required', 400, 'MISSING_ITEM_ID');
@@ -159,14 +159,26 @@ export class CartController {
         throw new AppError('User not authenticated', 401, 'NOT_AUTHENTICATED');
       }
 
-      const { itemId } = req.params;
+      const { id: itemId } = req.params;
       const { qty } = req.body;
 
-      if (!itemId || qty === undefined) {
-        throw new AppError('Item ID and quantity are required', 400, 'MISSING_FIELDS');
+      // Check if itemId exists in params
+      if (!itemId) {
+        throw new AppError('Item ID is required', 400, 'MISSING_ITEM_ID');
       }
 
-      if (qty <= 0) {
+      // Check if qty exists in body
+      if (qty === undefined || qty === null) {
+        throw new AppError('Quantity is required', 400, 'MISSING_QUANTITY');
+      }
+
+      // Convert qty to number and validate
+      const quantity = parseInt(qty);
+      if (isNaN(quantity)) {
+        throw new AppError('Quantity must be a valid number', 400, 'INVALID_QUANTITY');
+      }
+
+      if (quantity <= 0) {
         // If quantity is 0 or negative, remove the item
         const cart = await simpleCartService.removeItemFromCart(userId, itemId);
         
@@ -178,29 +190,27 @@ export class CartController {
           }
         });
       } else {
-        // Update quantity by removing and re-adding with new quantity
-        const cart = await simpleCartService.removeItemFromCart(userId, itemId);
-        
-        // Get the product ID from the removed item (we'll need to store this temporarily)
-        // For now, we'll require the product ID in the request body
-        const { productId } = req.body;
-        
-        if (!productId) {
-          throw new AppError('Product ID is required for quantity update', 400, 'MISSING_PRODUCT_ID');
-        }
-
-        const updatedCart = await simpleCartService.addItemToCart(userId, productId, qty);
+        // Update quantity using the new service method
+        const cart = await simpleCartService.updateCartItem(userId, itemId, quantity);
 
         res.json({
           success: true,
           message: 'Item quantity updated successfully',
           data: {
-            cart: updatedCart
+            cart
           }
         });
       }
     } catch (error) {
       if (error instanceof AppError) throw error;
+      
+      if (error.message.includes('Only')) {
+        throw new AppError(error.message, 400, 'INSUFFICIENT_STOCK');
+      }
+      if (error.message.includes('Cart item not found')) {
+        throw new AppError('Cart item not found', 404, 'CART_ITEM_NOT_FOUND');
+      }
+      
       throw new AppError(error.message, 500, 'UPDATE_QUANTITY_ERROR');
     }
   }

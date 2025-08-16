@@ -28,7 +28,7 @@ router.post('/add',
 // PUT /api/cart/item/:id - Update cart item quantity
 router.put('/item/:id',
   validateRequest(cartSchemas.updateItem),
-  asyncHandler(CartController.updateItem)
+  asyncHandler(CartController.updateItemQuantity)
 );
 
 // DELETE /api/cart/item/:id - Remove item from cart

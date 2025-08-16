@@ -37,24 +37,33 @@ testConnection().then(connected => {
 app.use(helmet());
 
 // CORS configuration
+const corsOrigins = process.env.CORS_ORIGINS 
+  ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
+  : ['http://localhost:8080', 'http://localhost:5173'];
+
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://yourdomain.com'] 
+    ? corsOrigins
     : ['http://localhost:8080', 'http://localhost:5173'],
   credentials: true
 }));
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // limit each IP to 100 requests per windowMs
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 5 * 60 * 1000, // 5 minutes (reduced from 15)
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 500, // limit each IP to 500 requests per windowMs (increased from 100)
   message: {
     success: false,
     error: {
       message: 'Too many requests from this IP, please try again later.',
       code: 'RATE_LIMIT_EXCEEDED'
     }
-  }
+  },
+  // Add headers to show rate limit info
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Skip rate limiting for health check
+  skip: (req) => req.path === '/health'
 });
 app.use(limiter);
 
@@ -101,8 +110,8 @@ app.use(errorHandler);
 // Start server
 app.listen(PORT, () => {
   logger.info(`🚀 Server running on port ${PORT}`);
-  logger.info(`📚 API Documentation available at http://localhost:${PORT}${API_PREFIX}`);
-  logger.info(`🏥 Health check: http://localhost:${PORT}/health`);
+  logger.info(`📚 API Documentation available at ${process.env.NODE_ENV === 'production' ? 'https://yourdomain.com' : `http://localhost:${PORT}`}${API_PREFIX}`);
+  logger.info(`🏥 Health check: ${process.env.NODE_ENV === 'production' ? 'https://yourdomain.com' : `http://localhost:${PORT}`}/health`);
 });
 
 export default app;

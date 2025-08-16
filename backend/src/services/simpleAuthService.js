@@ -38,7 +38,7 @@ export const simpleAuthService = {
     `, [user.id, new Date().toISOString()]);
 
     // Generate tokens
-    const accessToken = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '15m' });
+    const accessToken = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '5h' });
     const refreshToken = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
 
     return {
@@ -74,7 +74,7 @@ export const simpleAuthService = {
     );
 
     // Generate tokens
-    const accessToken = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '15m' });
+    const accessToken = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '5h' });
     const refreshToken = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
 
     // Remove password from user object
