@@ -84,7 +84,7 @@ export default function Dashboard() {
       changeType: 'up'
     },
     {
-      title: 'Total Orders',
+      title: 'Active Carts',
       value: overview?.data?.totalOrders || 0,
       icon: ShoppingCart,
       change: '+15%',
@@ -120,7 +120,7 @@ export default function Dashboard() {
         {/* Product Performance */}
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-            Product Performance
+            Top Products by Stock
           </h3>
           <div className="space-y-3">
             {productAnalytics?.data?.topProducts?.slice(0, 5).map((product, index) => (
@@ -134,13 +134,20 @@ export default function Dashboard() {
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Eye className="h-4 w-4 text-gray-400" />
                   <span className="text-sm text-gray-500 dark:text-gray-400">
-                    {product.views}
+                    Stock: {product.stock_qty}
+                  </span>
+                  <span className="text-sm text-gray-400 dark:text-gray-500">
+                    ${product.price}
                   </span>
                 </div>
               </div>
             ))}
+            {(!productAnalytics?.data?.topProducts || productAnalytics.data.topProducts.length === 0) && (
+              <div className="text-center text-gray-500 dark:text-gray-400 py-4">
+                No products found
+              </div>
+            )}
           </div>
         </div>
 
@@ -158,15 +165,25 @@ export default function Dashboard() {
                       {user.name.charAt(0).toUpperCase()}
                     </span>
                   </div>
-                  <span className="text-sm text-gray-900 dark:text-white">
-                    {user.name}
-                  </span>
+                  <div className="flex flex-col">
+                    <span className="text-sm text-gray-900 dark:text-white">
+                      {user.name}
+                    </span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {user.role}
+                    </span>
+                  </div>
                 </div>
                 <span className="text-sm text-gray-500 dark:text-gray-400">
                   {new Date(user.created_at).toLocaleDateString()}
                 </span>
               </div>
             ))}
+            {(!userAnalytics?.data?.recentUsers || userAnalytics.data.recentUsers.length === 0) && (
+              <div className="text-center text-gray-500 dark:text-gray-400 py-4">
+                No users found
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -179,7 +196,9 @@ export default function Dashboard() {
         <div className="space-y-4">
           {overview?.data?.recentActivity?.map((activity, index) => (
             <div key={index} className="flex items-center space-x-3">
-              <div className="h-2 w-2 bg-blue-600 rounded-full"></div>
+              <div className={`h-2 w-2 rounded-full ${
+                activity.type === 'user' ? 'bg-blue-600' : 'bg-green-600'
+              }`}></div>
               <span className="text-sm text-gray-600 dark:text-gray-400">
                 {activity.description}
               </span>
@@ -188,6 +207,11 @@ export default function Dashboard() {
               </span>
             </div>
           ))}
+          {(!overview?.data?.recentActivity || overview.data.recentActivity.length === 0) && (
+            <div className="text-center text-gray-500 dark:text-gray-400 py-4">
+              No recent activity
+            </div>
+          )}
         </div>
       </div>
     </div>

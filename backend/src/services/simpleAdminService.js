@@ -524,7 +524,8 @@ export class simpleAdminService {
   // Analytics & Dashboard
   static async getDashboardOverview() {
     try {
-      const result = await query(`
+      // Get basic counts
+      const countsResult = await query(`
         SELECT 
           (SELECT COUNT(*) FROM products WHERE is_active = true) as total_products,
           (SELECT COUNT(*) FROM users WHERE is_active = true) as total_users,
@@ -533,7 +534,63 @@ export class simpleAdminService {
           (SELECT COUNT(*) FROM categories WHERE is_active = true) as total_categories
       `);
       
-      return result.rows[0];
+      // Get recent users for analytics
+      const recentUsersResult = await query(`
+        SELECT id, name, email, created_at, role
+        FROM users 
+        WHERE is_active = true 
+        ORDER BY created_at DESC 
+        LIMIT 5
+      `);
+      
+      // Get top products by stock
+      const topProductsResult = await query(`
+        SELECT id, name, stock_qty, price, created_at
+        FROM products 
+        WHERE is_active = true 
+        ORDER BY stock_qty DESC 
+        LIMIT 5
+      `);
+      
+      // Get recent activity (simplified for now)
+      const recentActivityResult = await query(`
+        SELECT 
+          'New user registered' as description,
+          created_at as timestamp,
+          'user' as type
+        FROM users 
+        WHERE created_at >= CURRENT_DATE - INTERVAL '7 days'
+        UNION ALL
+        SELECT 
+          'New product added' as description,
+          created_at as timestamp,
+          'product' as type
+        FROM products 
+        WHERE created_at >= CURRENT_DATE - INTERVAL '7 days'
+        ORDER BY timestamp DESC 
+        LIMIT 10
+      `);
+      
+      // Calculate total revenue (from active carts)
+      const revenueResult = await query(`
+        SELECT COALESCE(SUM(total_amount), 0) as total_revenue
+        FROM carts 
+        WHERE status = 'active'
+      `);
+      
+      const counts = countsResult.rows[0];
+      
+      return {
+        totalProducts: parseInt(counts.total_products) || 0,
+        totalUsers: parseInt(counts.total_users) || 0,
+        totalOrders: parseInt(counts.active_carts) || 0,
+        totalRevenue: parseFloat(revenueResult.rows[0].total_revenue) || 0,
+        unreadMessages: parseInt(counts.unread_messages) || 0,
+        totalCategories: parseInt(counts.total_categories) || 0,
+        recentUsers: recentUsersResult.rows,
+        topProducts: topProductsResult.rows,
+        recentActivity: recentActivityResult.rows
+      };
     } catch (error) {
       logger.error('Error in getDashboardOverview:', error);
       throw new Error('Failed to fetch dashboard overview');
@@ -544,14 +601,15 @@ export class simpleAdminService {
     try {
       let dateFilter = '';
       if (period === '7d') {
-        dateFilter = "AND created_at >= CURRENT_DATE - INTERVAL '7 days'";
+        dateFilter = "AND p.created_at >= CURRENT_DATE - INTERVAL '7 days'";
       } else if (period === '30d') {
-        dateFilter = "AND created_at >= CURRENT_DATE - INTERVAL '30 days'";
+        dateFilter = "AND p.created_at >= CURRENT_DATE - INTERVAL '30 days'";
       } else if (period === '90d') {
-        dateFilter = "AND created_at >= CURRENT_DATE - INTERVAL '90 days'";
+        dateFilter = "AND p.created_at >= CURRENT_DATE - INTERVAL '90 days'";
       }
 
-      const result = await query(`
+      // Get category-based analytics
+      const categoryAnalytics = await query(`
         SELECT 
           c.name as category_name,
           COUNT(p.id) as product_count,
@@ -564,7 +622,27 @@ export class simpleAdminService {
         ORDER BY product_count DESC
       `);
       
-      return result.rows;
+      // Get top products by stock (for the frontend topProducts display)
+      const topProducts = await query(`
+        SELECT 
+          p.id,
+          p.name,
+          p.stock_qty,
+          p.price,
+          p.created_at,
+          c.name as category_name
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        WHERE p.is_active = true ${dateFilter}
+        ORDER BY p.stock_qty DESC
+        LIMIT 10
+      `);
+      
+      return {
+        categoryAnalytics: categoryAnalytics.rows,
+        topProducts: topProducts.rows,
+        period: period
+      };
     } catch (error) {
       logger.error('Error in getProductAnalytics:', error);
       throw new Error('Failed to fetch product analytics');
@@ -613,7 +691,8 @@ export class simpleAdminService {
         dateFilter = "AND created_at >= CURRENT_DATE - INTERVAL '90 days'";
       }
 
-      const result = await query(`
+      // Get user growth over time
+      const userGrowth = await query(`
         SELECT 
           DATE(created_at) as date,
           COUNT(*) as new_users,
@@ -625,7 +704,39 @@ export class simpleAdminService {
         LIMIT 90
       `);
       
-      return result.rows;
+      // Get recent users for the dashboard
+      const recentUsers = await query(`
+        SELECT 
+          id, 
+          name, 
+          email, 
+          role, 
+          created_at,
+          last_login
+        FROM users
+        WHERE is_active = true
+        ORDER BY created_at DESC
+        LIMIT 10
+      `);
+      
+      // Get user statistics
+      const userStats = await query(`
+        SELECT 
+          COUNT(*) as total_users,
+          COUNT(CASE WHEN role = 'admin' THEN 1 END) as admin_count,
+          COUNT(CASE WHEN role = 'user' THEN 1 END) as user_count,
+          COUNT(CASE WHEN last_login >= CURRENT_DATE - INTERVAL '7 days' THEN 1 END) as active_users_7d,
+          COUNT(CASE WHEN last_login >= CURRENT_DATE - INTERVAL '30 days' THEN 1 END) as active_users_30d
+        FROM users
+        WHERE is_active = true
+      `);
+      
+      return {
+        userGrowth: userGrowth.rows,
+        recentUsers: recentUsers.rows,
+        userStats: userStats.rows[0],
+        period: period
+      };
     } catch (error) {
       logger.error('Error in getUserAnalytics:', error);
       throw new Error('Failed to fetch user analytics');

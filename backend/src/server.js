@@ -40,12 +40,12 @@ app.use(helmet());
 // CORS configuration
 const corsOrigins = process.env.CORS_ORIGINS 
   ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
-  : ['http://localhost:8080', 'http://localhost:5173'];
+  : ['http://localhost:8080', 'http://localhost:5173', 'http://localhost:5174'];
 
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
     ? corsOrigins
-    : ['http://localhost:8080', 'http://localhost:5173'],
+    : ['http://localhost:8080', 'http://localhost:5173', 'http://localhost:5174'],
   credentials: true
 }));
 

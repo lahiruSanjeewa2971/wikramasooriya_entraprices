@@ -17,10 +17,13 @@ export default function Login() {
     setError('');
 
     try {
-      await authService.login(credentials);
+      console.log('Attempting login with:', { email: credentials.email });
+      const result = await authService.login(credentials);
+      console.log('Login successful:', result);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message);
+      console.error('Login error:', err);
+      setError(err.message || 'Login failed. Please try again.');
     } finally {
       setLoading(false);
     }
