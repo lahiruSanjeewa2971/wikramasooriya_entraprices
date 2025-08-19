@@ -10,6 +10,7 @@ import {
   Package
 } from 'lucide-react';
 import adminService from '../services/adminService';
+import ProductModal from '../components/ProductModal';
 
 export default function Products() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -38,23 +39,30 @@ export default function Products() {
   const createMutation = useMutation({
     mutationFn: adminService.createProduct,
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-products']);
+      // Invalidate all product queries to force refetch
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
       setShowCreateModal(false);
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => adminService.updateProduct(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['admin-products']);
+    onSuccess: (result, variables) => {
+      console.log('Product updated successfully:', result);
+      // Invalidate all product queries to force refetch
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
       setEditingProduct(null);
     },
+    onError: (error) => {
+      console.error('Error updating product:', error);
+    }
   });
 
   const deleteMutation = useMutation({
     mutationFn: adminService.deleteProduct,
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-products']);
+      // Invalidate all product queries to force refetch
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
     },
   });
 
@@ -124,7 +132,7 @@ export default function Products() {
             >
               <option value="">All Categories</option>
               {categories.map((category) => (
-                <option key={category.id} value={category.id}>
+                <option key={category.id} value={category.name}>
                   {category.name}
                 </option>
               ))}
@@ -207,14 +215,14 @@ export default function Products() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                        {product.category?.name || 'Uncategorized'}
+                        {product.category_name || 'Uncategorized'}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                       ${product.price}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      {product.stock_quantity || 0}
+                      {product.stock_qty || 0}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -312,156 +320,6 @@ export default function Products() {
           isLoading={createMutation.isPending || updateMutation.isPending}
         />
       )}
-    </div>
-  );
-}
-
-// Product Modal Component
-function ProductModal({ product, categories, onClose, onSubmit, isLoading }) {
-  const [formData, setFormData] = useState({
-    name: product?.name || '',
-    sku: product?.sku || '',
-    description: product?.description || '',
-    price: product?.price || '',
-    stock_quantity: product?.stock_quantity || '',
-    category_id: product?.category_id || '',
-    is_active: product?.is_active ?? true,
-  });
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (product) {
-      onSubmit(product.id, formData);
-    } else {
-      onSubmit(formData);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
-        <div className="mt-3">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-            {product ? 'Edit Product' : 'Create Product'}
-          </h3>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Name
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                SKU
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.sku}
-                onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Description
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                rows="3"
-                className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-              />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Price
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  required
-                  value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                  className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Stock
-                </label>
-                <input
-                  type="number"
-                  required
-                  value={formData.stock_quantity}
-                  onChange={(e) => setFormData({ ...formData, stock_quantity: e.target.value })}
-                  className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                />
-              </div>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Category
-              </label>
-              <select
-                value={formData.category_id}
-                onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-                className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-              >
-                <option value="">Select Category</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="is_active"
-                checked={formData.is_active}
-                onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label htmlFor="is_active" className="ml-2 block text-sm text-gray-900 dark:text-white">
-                Active
-              </label>
-            </div>
-            
-            <div className="flex justify-end space-x-3 pt-4">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-              >
-                {isLoading ? 'Saving...' : (product ? 'Update' : 'Create')}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
     </div>
   );
 }

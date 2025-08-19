@@ -8,7 +8,7 @@ export class simpleAdminService {
     const offset = (page - 1) * limit;
     
     try {
-      let whereClause = 'WHERE p.is_active = true';
+      let whereClause = 'WHERE 1=1'; // Remove the is_active filter to show all products
       const params = [];
       let paramCount = 0;
 
@@ -63,15 +63,52 @@ export class simpleAdminService {
     try {
       await client.query('BEGIN');
 
-      const { sku, name, description, price, stock_qty, category_id } = productData;
+      const { 
+        sku, 
+        name, 
+        description, 
+        short_description,
+        image_url,
+        price, 
+        stock_qty, 
+        category_id,
+        featured = false,
+        new_arrival = false,
+        weight,
+        dimensions,
+        is_active = true
+      } = productData;
+
+      // Convert empty strings to null for optional fields
+      const cleanShortDescription = short_description?.trim() || null;
+      const cleanImageUrl = image_url?.trim() || null;
+      const cleanWeight = weight && weight !== '' ? parseFloat(weight) : null;
+      const cleanDimensions = dimensions || null;
+      const cleanCategoryId = category_id && category_id !== '' ? parseInt(category_id) : null;
+      const cleanPrice = parseFloat(price);
+      const cleanStockQty = parseInt(stock_qty);
+
+      // Validate required fields
+      if (!sku || !name || !cleanPrice || cleanStockQty < 0) {
+        throw new Error('Missing or invalid required fields');
+      }
 
       const insertQuery = `
-        INSERT INTO products (sku, name, description, price, stock_qty, category_id)
-        VALUES ($1, $2, $3, $4, $5, $6)
+        INSERT INTO products (
+          sku, name, description, short_description, image_url, 
+          price, stock_qty, category_id, featured, new_arrival, 
+          weight, dimensions, is_active, created_at, updated_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         RETURNING *
       `;
 
-      const values = [sku, name, description, price, stock_qty, category_id];
+      const values = [
+        sku, name, description, cleanShortDescription, cleanImageUrl,
+        cleanPrice, cleanStockQty, cleanCategoryId, featured, new_arrival,
+        cleanWeight, cleanDimensions, is_active
+      ];
+      
       const result = await client.query(insertQuery, values);
       
       await client.query('COMMIT');

@@ -77,26 +77,30 @@ export const productSchemas = {
     name: Joi.string().min(3).max(200).required(),
     description: Joi.string().optional(),
     short_description: Joi.string().max(500).optional(),
-    image_url: Joi.string().uri().optional(),
+    image_url: Joi.string().uri().allow('').optional(),
     price: Joi.number().positive().required(),
     stock_qty: Joi.number().integer().min(0).default(0),
+    category_id: Joi.number().integer().positive().optional(),
     featured: Joi.boolean().default(false),
     new_arrival: Joi.boolean().default(false),
     weight: Joi.number().positive().optional(),
-    dimensions: Joi.object().optional()
+    dimensions: Joi.any().optional(),
+    is_active: Joi.boolean().default(true)
   }),
 
   update: Joi.object({
     name: Joi.string().min(3).max(200).optional(),
     description: Joi.string().optional(),
     short_description: Joi.string().max(500).optional(),
-    image_url: Joi.string().uri().optional(),
+    image_url: Joi.string().uri().allow('').optional(),
     price: Joi.number().positive().optional(),
     stock_qty: Joi.number().integer().min(0).optional(),
+    category_id: Joi.number().integer().positive().optional(),
     featured: Joi.boolean().optional(),
     new_arrival: Joi.boolean().optional(),
     weight: Joi.number().positive().optional(),
-    dimensions: Joi.object().optional()
+    dimensions: Joi.any().optional(),
+    is_active: Joi.boolean().optional()
   })
 };
 
@@ -153,28 +157,30 @@ export const adminSchemas = {
     name: Joi.string().min(3).max(200).required(),
     description: Joi.string().optional(),
     short_description: Joi.string().max(500).optional(),
-    image_url: Joi.string().uri().optional(),
+    image_url: Joi.string().uri().allow('').optional(),
     price: Joi.number().positive().required(),
     stock_qty: Joi.number().integer().min(0).default(0),
     category_id: Joi.number().integer().positive().optional(),
     featured: Joi.boolean().default(false),
     new_arrival: Joi.boolean().default(false),
     weight: Joi.number().positive().optional(),
-    dimensions: Joi.object().optional()
+    dimensions: Joi.any().optional(),
+    is_active: Joi.boolean().default(true)
   }),
 
   updateProduct: Joi.object({
     name: Joi.string().min(3).max(200).optional(),
     description: Joi.string().optional(),
     short_description: Joi.string().max(500).optional(),
-    image_url: Joi.string().uri().optional(),
+    image_url: Joi.string().uri().allow('').optional(),
     price: Joi.number().positive().optional(),
     stock_qty: Joi.number().integer().min(0).optional(),
     category_id: Joi.number().integer().positive().optional(),
     featured: Joi.boolean().optional(),
     new_arrival: Joi.boolean().optional(),
     weight: Joi.number().positive().optional(),
-    dimensions: Joi.object().optional()
+    dimensions: Joi.any().optional(),
+    is_active: Joi.boolean().optional()
   }),
 
   createCategory: Joi.object({

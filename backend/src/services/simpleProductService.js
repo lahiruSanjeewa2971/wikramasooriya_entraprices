@@ -110,6 +110,21 @@ export const simpleProductService = {
     return result.rows[0] || null;
   },
 
+  // Get product by SKU
+  async getProductBySku(sku) {
+    const result = await query(`
+      SELECT 
+        p.*,
+        c.name as category_name,
+        c.description as category_description
+      FROM products p
+      LEFT JOIN categories c ON p.category_id = c.id
+      WHERE p.sku = $1
+    `, [sku]);
+
+    return result.rows[0] || null;
+  },
+
   // Get featured products
   async getFeaturedProducts(limit = 8) {
     const result = await query(`
