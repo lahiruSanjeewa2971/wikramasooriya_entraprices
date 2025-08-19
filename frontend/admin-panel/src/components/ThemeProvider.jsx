@@ -1,16 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react'
-
-const ThemeContext = createContext()
-
-export function ThemeProvider({ children, ...props }) {
-  return <ThemeContext.Provider value={props}>{children}</ThemeContext.Provider>
-}
-
-export const useTheme = () => {
-  const context = useContext(ThemeContext)
-  if (context === undefined) throw new Error('useTheme must be used within a ThemeProvider')
-  return context
-}
+import { useTheme } from 'next-themes'
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme()
@@ -19,6 +7,7 @@ export function ThemeToggle() {
     <button
       onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
       className="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+      title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
     >
       {theme === 'light' ? (
         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
