@@ -1,5 +1,5 @@
 import { getClient, query } from '../db/simple-connection.js';
-import { logger } from '../utils/logger.js';
+import { logger, logDatabaseError } from '../utils/logger.js';
 
 export class simpleAdminService {
   // Product Management
@@ -200,7 +200,6 @@ export class simpleAdminService {
         SELECT c.*, COUNT(p.id) as product_count
         FROM categories c
         LEFT JOIN products p ON c.id = p.category_id AND p.is_active = true
-        WHERE c.is_active = true
         GROUP BY c.id
         ORDER BY c.name
       `);
@@ -213,17 +212,22 @@ export class simpleAdminService {
 
   static async createCategory(categoryData) {
     try {
-      const { name, description } = categoryData;
+      const { name, description, is_active = true } = categoryData;
       
-      const result = await query(`
-        INSERT INTO categories (name, description)
-        VALUES ($1, $2)
+      const insertQuery = `
+        INSERT INTO categories (name, description, is_active, created_at, updated_at)
+        VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         RETURNING *
-      `, [name, description]);
+      `;
+      
+      const result = await query(insertQuery, [name, description, is_active]);
       
       return result.rows[0];
     } catch (error) {
-      logger.error('Error in createCategory:', error);
+      logDatabaseError('createCategory', error, 
+        'INSERT INTO categories (name, description, is_active, created_at, updated_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
+        [name, description, is_active]
+      );
       throw new Error('Failed to create category');
     }
   }
@@ -258,6 +262,13 @@ export class simpleAdminService {
 
   static async deleteCategory(id) {
     try {
+      // First check if category has any products (active or inactive)
+      const productsCount = await this.getProductsCountByCategory(id);
+      
+      if (productsCount > 0) {
+        throw new Error(`Cannot delete category. It has ${productsCount} product(s) associated with it. Please reassign or delete the products first.`);
+      }
+      
       const result = await query('DELETE FROM categories WHERE id = $1 RETURNING id', [id]);
       
       if (result.rows.length === 0) {
@@ -267,7 +278,7 @@ export class simpleAdminService {
       return true;
     } catch (error) {
       logger.error('Error in deleteCategory:', error);
-      throw new Error('Failed to delete category');
+      throw new Error(error.message || 'Failed to delete category');
     }
   }
 
@@ -283,11 +294,34 @@ export class simpleAdminService {
 
   static async getProductsCountByCategory(categoryId) {
     try {
-      const result = await query('SELECT COUNT(*) as count FROM products WHERE category_id = $1 AND is_active = true', [categoryId]);
+      // Count ALL products in the category (active and inactive)
+      const result = await query('SELECT COUNT(*) as count FROM products WHERE category_id = $1', [categoryId]);
       return parseInt(result.rows[0].count);
     } catch (error) {
       logger.error('Error in getProductsCountByCategory:', error);
       throw new Error('Failed to get products count');
+    }
+  }
+
+  static async getProductsByCategory(categoryId) {
+    try {
+      // Get detailed information about products in the category (active and inactive)
+      const result = await query(`
+        SELECT 
+          p.id,
+          p.name,
+          p.sku,
+          p.is_active,
+          p.created_at
+        FROM products p
+        WHERE p.category_id = $1
+        ORDER BY p.name
+      `, [categoryId]);
+      
+      return result.rows;
+    } catch (error) {
+      logger.error('Error in getProductsByCategory:', error);
+      throw new Error('Failed to get products by category');
     }
   }
 

@@ -1,5 +1,5 @@
 import pg from 'pg';
-import { logger } from '../utils/logger.js';
+import { logger, logDatabaseError } from '../utils/logger.js';
 
 const { Pool } = pg;
 
@@ -26,7 +26,7 @@ export const testConnection = async () => {
     logger.info('✅ Database connection successful');
     return true;
   } catch (err) {
-    logger.error('❌ Database connection failed:', err);
+    logDatabaseError('testConnection', err);
     return false;
   }
 };
@@ -50,7 +50,7 @@ export const query = async (text, params = []) => {
     
     return res;
   } catch (err) {
-    logger.error('Query error:', err);
+    logDatabaseError('query', err, text, params);
     throw err;
   }
 };

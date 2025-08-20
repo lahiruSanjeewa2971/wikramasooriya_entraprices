@@ -1,53 +1,102 @@
-const logLevels = {
-  error: 0,
-  warn: 1,
-  info: 2,
-  debug: 3
+import winston from 'winston';
+
+// Custom format for better error readability
+const customFormat = winston.format.combine(
+  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+  winston.format.errors({ stack: true }),
+  winston.format.printf(({ timestamp, level, message, stack, ...meta }) => {
+    let log = `${timestamp} [${level.toUpperCase()}] ${message}`;
+    
+    // Add stack trace for errors
+    if (stack) {
+      log += `\n${stack}`;
+    }
+    
+    // Add metadata if present
+    if (Object.keys(meta).length > 0) {
+      log += `\nMetadata: ${JSON.stringify(meta, null, 2)}`;
+    }
+    
+    return log;
+  })
+);
+
+export const logger = winston.createLogger({
+  level: process.env.LOG_LEVEL || 'info',
+  format: customFormat,
+  transports: [
+    new winston.transports.Console({
+      format: winston.format.combine(
+        winston.format.colorize(),
+        customFormat
+      )
+    }),
+    new winston.transports.File({ 
+      filename: 'logs/error.log', 
+      level: 'error',
+      format: customFormat
+    }),
+    new winston.transports.File({ 
+      filename: 'logs/combined.log',
+      format: customFormat
+    })
+  ]
+});
+
+// Enhanced logging methods
+export const logError = (message, error, context = {}) => {
+  logger.error(message, {
+    error: {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      detail: error.detail
+    },
+    context,
+    timestamp: new Date().toISOString()
+  });
 };
 
-const currentLevel = logLevels[process.env.LOG_LEVEL || 'info'];
+export const logApiError = (req, error, context = {}) => {
+  logger.error('API Error', {
+    error: {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      detail: error.detail
+    },
+    request: {
+      method: req.method,
+      url: req.url,
+      ip: req.ip,
+      userAgent: req.get('User-Agent'),
+      body: req.body,
+      params: req.params,
+      query: req.query,
+      user: req.user?.id || 'unauthenticated'
+    },
+    context,
+    timestamp: new Date().toISOString()
+  });
+};
 
-class Logger {
-  constructor() {
-    this.timestamp = () => new Date().toISOString();
-  }
-
-  log(level, message, data = {}) {
-    if (logLevels[level] <= currentLevel) {
-      const logEntry = {
-        timestamp: this.timestamp(),
-        level: level.toUpperCase(),
-        message,
-        ...data
-      };
-
-      if (level === 'error') {
-        console.error(JSON.stringify(logEntry));
-      } else if (level === 'warn') {
-        console.warn(JSON.stringify(logEntry));
-      } else if (level === 'info') {
-        console.info(JSON.stringify(logEntry));
-      } else if (level === 'debug') {
-        console.debug(JSON.stringify(logEntry));
-      }
-    }
-  }
-
-  error(message, data = {}) {
-    this.log('error', message, data);
-  }
-
-  warn(message, data = {}) {
-    this.log('warn', message, data);
-  }
-
-  info(message, data = {}) {
-    this.log('info', message, data);
-  }
-
-  debug(message, data = {}) {
-    this.log('debug', message, data);
-  }
-}
-
-export const logger = new Logger();
+export const logDatabaseError = (operation, error, query = null, params = null) => {
+  logger.error(`Database Error in ${operation}`, {
+    error: {
+      message: error.message,
+      code: error.code,
+      detail: error.detail,
+      hint: error.hint,
+      where: error.where,
+      schema: error.schema,
+      table: error.table,
+      column: error.column,
+      dataType: error.dataType,
+      constraint: error.constraint
+    },
+    operation,
+    query,
+    params,
+    timestamp: new Date().toISOString()
+  });
+};

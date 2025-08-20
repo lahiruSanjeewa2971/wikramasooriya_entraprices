@@ -21,6 +21,7 @@ router.post('/products/bulk-update', asyncHandler(AdminController.bulkUpdateProd
 // Category Management
 router.get('/categories', asyncHandler(AdminController.getAllCategories));
 router.post('/categories', validateRequest(adminSchemas.createCategory), asyncHandler(AdminController.createCategory));
+router.get('/categories/:id/products', asyncHandler(AdminController.getCategoryProducts));
 router.put('/categories/:id', validateRequest(adminSchemas.updateCategory), asyncHandler(AdminController.updateCategory));
 router.delete('/categories/:id', asyncHandler(AdminController.deleteCategory));
 

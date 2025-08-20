@@ -16,12 +16,12 @@ const seedDatabase = async () => {
     // Create categories
     const now = new Date().toISOString();
     const categories = await query(`
-      INSERT INTO categories (name, description, image_url, created_at, updated_at) VALUES
-        ('Bearings', 'High-quality industrial bearings for various applications', 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=400&h=300&fit=crop', $1, $1),
-        ('Fasteners', 'Industrial fasteners including bolts, nuts, and washers', 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=400&h=300&fit=crop', $1, $1),
-        ('Hydraulics', 'Hydraulic systems and components', 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=400&h=300&fit=crop', $1, $1),
-        ('Electrical', 'Electrical components and equipment', 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=400&h=300&fit=crop', $1, $1),
-        ('Tools', 'Industrial tools and equipment', 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=400&h=300&fit=crop', $1, $1)
+      INSERT INTO categories (name, description, created_at, updated_at) VALUES
+        ('Bearings', 'High-quality industrial bearings for various applications', $1, $1),
+        ('Fasteners', 'Industrial fasteners including bolts, nuts, and washers', $1, $1),
+        ('Hydraulics', 'Hydraulic systems and components', $1, $1),
+        ('Electrical', 'Electrical components and equipment', $1, $1),
+        ('Tools', 'Industrial tools and equipment', $1, $1)
       RETURNING id, name
     `, [now]);
     console.log('✅ Categories created:', categories.rows.length);

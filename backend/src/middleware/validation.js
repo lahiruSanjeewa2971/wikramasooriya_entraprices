@@ -186,13 +186,13 @@ export const adminSchemas = {
   createCategory: Joi.object({
     name: Joi.string().min(2).max(100).required(),
     description: Joi.string().optional(),
-    image_url: Joi.string().uri().optional()
+    is_active: Joi.boolean().default(true)
   }),
 
   updateCategory: Joi.object({
     name: Joi.string().min(2).max(100).optional(),
     description: Joi.string().optional(),
-    image_url: Joi.string().optional()
+    is_active: Joi.boolean().optional()
   }),
 
   updateUser: Joi.object({

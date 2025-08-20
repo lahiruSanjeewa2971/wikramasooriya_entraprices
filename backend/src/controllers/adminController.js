@@ -1,8 +1,9 @@
+import { simpleAdminService } from '../services/simpleAdminService.js';
 import { AppError } from '../middleware/errorHandler.js';
+import { logApiError } from '../utils/logger.js';
 import { simpleProductService } from '../services/simpleProductService.js';
 import { simpleAuthService } from '../services/simpleAuthService.js';
 import { simpleContactService } from '../services/simpleContactService.js';
-import { simpleAdminService } from '../services/simpleAdminService.js';
 import xlsx from 'xlsx';
 
 export class AdminController {
@@ -154,9 +155,9 @@ export class AdminController {
       // Check if category name already exists
       const existingCategory = await simpleAdminService.getCategoryByName(categoryData.name);
       if (existingCategory) {
-        throw new AppError('Category with this name already exists', 409, 'CATEGORY_EXISTS');
+        throw new AppError('Category name already exists', 409, 'CATEGORY_NAME_EXISTS');
       }
-
+      
       const category = await simpleAdminService.createCategory(categoryData);
       
       res.status(201).json({
@@ -165,6 +166,12 @@ export class AdminController {
         data: { category }
       });
     } catch (error) {
+      // Log the error with enhanced context
+      logApiError(req, error, {
+        operation: 'createCategory',
+        categoryData: req.body
+      });
+      
       if (error instanceof AppError) throw error;
       throw new AppError(error.message, 500, 'CATEGORY_CREATE_ERROR');
     }
@@ -192,12 +199,6 @@ export class AdminController {
     try {
       const { id } = req.params;
       
-      // Check if category has products
-      const productsCount = await simpleAdminService.getProductsCountByCategory(id);
-      if (productsCount > 0) {
-        throw new AppError(`Cannot delete category with ${productsCount} products. Please reassign or delete products first.`, 400, 'CATEGORY_HAS_PRODUCTS');
-      }
-      
       await simpleAdminService.deleteCategory(id);
       
       res.json({
@@ -205,8 +206,36 @@ export class AdminController {
         message: 'Category deleted successfully'
       });
     } catch (error) {
+      // Log the error with enhanced context
+      logApiError(req, error, {
+        operation: 'deleteCategory',
+        categoryId: req.params.id
+      });
+      
       if (error instanceof AppError) throw error;
       throw new AppError(error.message, 500, 'CATEGORY_DELETE_ERROR');
+    }
+  }
+
+  static async getCategoryProducts(req, res) {
+    try {
+      const { id } = req.params;
+      
+      const products = await simpleAdminService.getProductsByCategory(id);
+      
+      res.json({
+        success: true,
+        data: { products }
+      });
+    } catch (error) {
+      // Log the error with enhanced context
+      logApiError(req, error, {
+        operation: 'getCategoryProducts',
+        categoryId: req.params.id
+      });
+      
+      if (error instanceof AppError) throw error;
+      throw new AppError(error.message, 500, 'CATEGORY_PRODUCTS_FETCH_ERROR');
     }
   }
 
