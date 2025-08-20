@@ -2,6 +2,182 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Dark mode scrollbar */
+.dark ::-webkit-scrollbar-track {
+  background: #374151;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #6b7280;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Line clamping utilities */
+.line-clamp-1 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.line-clamp-3 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+/* Text truncation utilities */
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Responsive text sizing */
+.text-responsive-sm {
+  font-size: clamp(0.75rem, 2vw, 0.875rem);
+}
+
+.text-responsive-base {
+  font-size: clamp(0.875rem, 2.5vw, 1rem);
+}
+
+.text-responsive-lg {
+  font-size: clamp(1rem, 3vw, 1.125rem);
+}
+
+/* Responsive spacing utilities */
+.space-responsive {
+  gap: clamp(0.5rem, 2vw, 1rem);
+}
+
+.p-responsive {
+  padding: clamp(0.5rem, 2vw, 1rem);
+}
+
+.px-responsive {
+  padding-left: clamp(0.5rem, 2vw, 1rem);
+  padding-right: clamp(0.5rem, 2vw, 1rem);
+}
+
+.py-responsive {
+  padding-top: clamp(0.5rem, 2vw, 1rem);
+  padding-bottom: clamp(0.5rem, 2vw, 1rem);
+}
+
+/* Card responsive improvements */
+.card-responsive {
+  min-height: clamp(160px, 25vh, 200px);
+  padding: clamp(0.75rem, 2vw, 1.5rem);
+}
+
+/* Grid responsive improvements */
+.grid-responsive {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: clamp(0.75rem, 2vw, 1.5rem);
+}
+
+/* React Toastify Customization */
+.Toastify__toast {
+  border-radius: 8px;
+  font-family: inherit;
+}
+
+.Toastify__toast--success {
+  background: #10b981;
+  color: white;
+}
+
+.Toastify__toast--error {
+  background: #ef4444;
+  color: white;
+}
+
+.Toastify__toast--warning {
+  background: #f59e0b;
+  color: white;
+}
+
+.Toastify__toast--info {
+  background: #3b82f6;
+  color: white;
+}
+
+/* Dark mode toast adjustments */
+.dark .Toastify__toast {
+  background: #1f2937;
+  color: #f9fafb;
+  border: 1px solid #374151;
+}
+
+.dark .Toastify__toast--success {
+  background: #065f46;
+  border-color: #10b981;
+}
+
+.dark .Toastify__toast--error {
+  background: #7f1d1d;
+  border-color: #ef4444;
+}
+
+.dark .Toastify__toast--warning {
+  background: #78350f;
+  border-color: #f59e0b;
+}
+
+.dark .Toastify__toast--info {
+  background: #1e3a8a;
+  border-color: #3b82f6;
+}
+
+/* Toast close button */
+.Toastify__close-button {
+  color: inherit;
+  opacity: 0.7;
+}
+
+.Toastify__close-button:hover {
+  opacity: 1;
+}
+
+/* Toast progress bar */
+.Toastify__progress-bar {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.dark .Toastify__progress-bar {
+  background: rgba(249, 250, 251, 0.3);
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
