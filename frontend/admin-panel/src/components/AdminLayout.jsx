@@ -9,7 +9,8 @@ import {
   Upload, 
   Menu, 
   X,
-  LogOut
+  LogOut,
+  Image
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeProvider';
 import authService from '../services/authService';
@@ -21,6 +22,7 @@ const navigation = [
   { name: 'Users', href: '/users', icon: Users },
   { name: 'Contacts', href: '/contacts', icon: MessageSquare },
   { name: 'Excel Upload', href: '/excel-upload', icon: Upload },
+  { name: 'Image Upload Demo', href: '/image-upload-demo', icon: Image },
 ];
 
 export default function AdminLayout() {

@@ -15,6 +15,7 @@ import productRoutes from './routes/products.js';
 import cartRoutes from './routes/cart.js';
 import contactRoutes from './routes/contact.js';
 import adminRoutes from './routes/admin.js';
+import uploadRoutes from './routes/upload.js';
 
 // Load environment variables
 dotenv.config();
@@ -94,6 +95,7 @@ app.use(`${API_PREFIX}/products`, productRoutes);
 app.use(`${API_PREFIX}/cart`, cartRoutes);
 app.use(`${API_PREFIX}/contact`, contactRoutes);
 app.use(`${API_PREFIX}/admin`, adminRoutes);
+app.use(`${API_PREFIX}/upload`, uploadRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {

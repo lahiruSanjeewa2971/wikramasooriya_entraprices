@@ -10,6 +10,7 @@ import Categories from './pages/Categories';
 import Users from './pages/Users';
 import Contacts from './pages/Contacts';
 import ExcelUpload from './pages/ExcelUpload';
+import ImageUploadDemo from './pages/ImageUploadDemo';
 import AdminLayout from './components/AdminLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import './index.css';
@@ -59,6 +60,7 @@ function App() {
                 <Route path="users" element={<Users />} />
                 <Route path="contacts" element={<Contacts />} />
                 <Route path="excel-upload" element={<ExcelUpload />} />
+                <Route path="image-upload-demo" element={<ImageUploadDemo />} />
               </Route>
             </Routes>
             <ToastContainerWithTheme />

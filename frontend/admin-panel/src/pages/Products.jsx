@@ -199,7 +199,20 @@ export default function Products() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="h-10 w-10 flex-shrink-0">
-                          <div className="h-10 w-10 rounded-lg bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
+                          {product.image_url ? (
+                            <img
+                              src={product.image_url}
+                              alt={product.name}
+                              className="h-10 w-10 rounded-lg object-cover border border-gray-200 dark:border-gray-600"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                e.target.nextSibling.style.display = 'flex';
+                              }}
+                            />
+                          ) : null}
+                          <div className={`h-10 w-10 rounded-lg bg-gray-200 dark:bg-gray-600 flex items-center justify-center ${
+                            product.image_url ? 'hidden' : ''
+                          }`}>
                             <Package className="h-6 w-6 text-gray-400" />
                           </div>
                         </div>

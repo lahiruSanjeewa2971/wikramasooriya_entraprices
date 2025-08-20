@@ -1,102 +1,200 @@
 import { getClient, query } from '../db/simple-connection.js';
 import { logger, logDatabaseError } from '../utils/logger.js';
+import { AppError } from '../middleware/errorHandler.js';
+import { simpleProductService } from './simpleProductService.js';
 
 export class simpleAdminService {
-  // Product Management
-  static async getAllProductsForAdmin(options = {}) {
-    const { page = 1, limit = 50, category, search, sortBy = 'created_at', sortOrder = 'DESC' } = options;
-    const offset = (page - 1) * limit;
-    
+  /**
+   * Get dashboard overview
+   */
+  static async getDashboardOverview() {
     try {
-      let whereClause = 'WHERE 1=1'; // Remove the is_active filter to show all products
-      const params = [];
-      let paramCount = 0;
+      const totalProducts = await this.getTotalProducts();
+      const totalUsers = await this.getTotalUsers();
+      const totalOrders = await this.getTotalOrders();
+      const totalRevenue = await this.getTotalRevenue();
+      const unreadMessages = await this.getUnreadMessages();
+      const totalCategories = await this.getTotalCategories();
+      const recentUsers = await this.getRecentUsers();
+      const topProducts = await this.getTopProducts();
+      const recentActivity = await this.getRecentActivity();
 
-      if (category) {
-        paramCount++;
-        whereClause += ` AND c.name = $${paramCount}`;
-        params.push(category);
-      }
+      return {
+        totalProducts,
+        totalUsers,
+        totalOrders,
+        totalRevenue,
+        unreadMessages,
+        totalCategories,
+        recentUsers,
+        topProducts,
+        recentActivity
+      };
+    } catch (error) {
+      logDatabaseError('getDashboardOverview', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get product analytics
+   */
+  static async getProductAnalytics() {
+    try {
+      const categoryAnalytics = await this.getCategoryAnalytics();
+      const topProducts = await this.getTopProducts();
+      const period = 'last_30_days';
+
+      return {
+        categoryAnalytics,
+        topProducts,
+        period
+      };
+    } catch (error) {
+      logDatabaseError('getProductAnalytics', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get user analytics
+   */
+  static async getUserAnalytics() {
+    try {
+      const userGrowth = await this.getUserGrowth();
+      const userRoleDistribution = await this.getUserRoleDistribution();
+
+      return {
+        userGrowth,
+        userRoleDistribution
+      };
+    } catch (error) {
+      logDatabaseError('getUserAnalytics', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all products for admin view
+   */
+  static async getAllProductsForAdmin(options = {}) {
+    try {
+      const { page = 1, limit = 10, search = '', category = '', sortBy = 'created_at', sortOrder = 'DESC' } = options;
+      const offset = (page - 1) * limit;
+      
+      let whereClause = 'WHERE 1=1';
+      const queryParams = [];
+      let paramCount = 0;
 
       if (search) {
         paramCount++;
         whereClause += ` AND (p.name ILIKE $${paramCount} OR p.sku ILIKE $${paramCount})`;
-        params.push(`%${search}%`);
+        queryParams.push(`%${search}%`);
       }
 
-      const countQuery = `SELECT COUNT(*) as total FROM products p LEFT JOIN categories c ON p.category_id = c.id ${whereClause}`;
-      const countResult = await query(countQuery, params);
-      const total = parseInt(countResult.rows[0].total);
+      if (category) {
+        paramCount++;
+        whereClause += ` AND c.name ILIKE $${paramCount}`;
+        queryParams.push(`%${category}%`);
+      }
 
-      const productsQuery = `
-        SELECT p.*, c.name as category_name
+      const sqlQuery = `
+        SELECT 
+          p.*,
+          c.name as category_name,
+          COALESCE(p.stock_qty, 0) as stock_qty
         FROM products p
         LEFT JOIN categories c ON p.category_id = c.id
         ${whereClause}
         ORDER BY p.${sortBy} ${sortOrder}
         LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}
       `;
-      params.push(limit, offset);
+
+      queryParams.push(limit, offset);
+      const result = await query(sqlQuery, queryParams);
+
+      // Get total count for pagination
+      let countQuery = `
+        SELECT COUNT(*) 
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        ${whereClause}
+      `;
       
-      const productsResult = await query(productsQuery, params);
-      const products = productsResult.rows;
+      const countResult = await query(countQuery, queryParams.slice(0, -2));
+      const total = parseInt(countResult.rows[0].count);
 
-      const totalPages = Math.ceil(total / limit);
-      const pagination = {
-        current_page: page,
-        total_pages: totalPages,
-        total_items: total,
-        items_per_page: limit,
-        has_next: page < totalPages,
-        has_prev: page > 1
+      return {
+        products: result.rows,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit)
+        },
+        total
       };
-
-      return { products, pagination, total };
     } catch (error) {
-      logger.error('Error in getAllProductsForAdmin:', error);
-      throw new Error('Failed to fetch products');
+      logDatabaseError('getAllProductsForAdmin', error, { options });
+      throw error;
     }
   }
 
+  /**
+   * Create a new product
+   */
   static async createProduct(productData) {
-    const client = await getClient();
     try {
-      await client.query('BEGIN');
-
-      const { 
-        sku, 
-        name, 
-        description, 
-        short_description,
-        image_url,
-        price, 
-        stock_qty, 
-        category_id,
-        featured = false,
-        new_arrival = false,
-        weight,
-        dimensions,
-        is_active = true
+      // Clean and validate data
+      const {
+        name, sku, description, short_description, image_url,
+        price, stock_qty, category_id, featured, new_arrival,
+        weight, dimensions, is_active
       } = productData;
 
-      // Convert empty strings to null for optional fields
-      const cleanShortDescription = short_description?.trim() || null;
-      const cleanImageUrl = image_url?.trim() || null;
-      const cleanWeight = weight && weight !== '' ? parseFloat(weight) : null;
-      const cleanDimensions = dimensions || null;
-      const cleanCategoryId = category_id && category_id !== '' ? parseInt(category_id) : null;
+      // Clean short description (remove HTML tags)
+      const cleanShortDescription = short_description ? short_description.replace(/<[^>]*>/g, '') : null;
+      
+      // Clean image URL (remove HTML tags)
+      const cleanImageUrl = image_url ? image_url.replace(/<[^>]*>/g, '') : null;
+      
+      // Clean and validate price
       const cleanPrice = parseFloat(price);
+      if (isNaN(cleanPrice) || cleanPrice < 0) {
+        throw new AppError('Invalid price value', 400, 'INVALID_PRICE');
+      }
+      
+      // Clean and validate stock quantity
       const cleanStockQty = parseInt(stock_qty);
+      if (isNaN(cleanStockQty) || cleanStockQty < 0) {
+        throw new AppError('Invalid stock quantity', 400, 'INVALID_STOCK_QTY');
+      }
+      
+      // Clean and validate category ID
+      const cleanCategoryId = category_id ? parseInt(category_id) : null;
+      if (category_id && (isNaN(cleanCategoryId) || cleanCategoryId <= 0)) {
+        throw new AppError('Invalid category ID', 400, 'INVALID_CATEGORY_ID');
+      }
+      
+      // Clean and validate weight
+      const cleanWeight = weight ? parseFloat(weight) : null;
+      if (weight && (isNaN(cleanWeight) || cleanWeight < 0)) {
+        throw new AppError('Invalid weight value', 400, 'INVALID_WEIGHT');
+      }
+      
+      // Clean dimensions (allow any value)
+      const cleanDimensions = dimensions;
 
-      // Validate required fields
-      if (!sku || !name || !cleanPrice || cleanStockQty < 0) {
-        throw new Error('Missing or invalid required fields');
+      // Check if SKU already exists
+      const existingProduct = await simpleProductService.getProductBySku(sku);
+      if (existingProduct) {
+        throw new AppError('Product with this SKU already exists', 409, 'DUPLICATE_SKU');
       }
 
       const insertQuery = `
         INSERT INTO products (
-          sku, name, description, short_description, image_url, 
-          price, stock_qty, category_id, featured, new_arrival, 
+          sku, name, description, short_description, image_url,
+          price, stock_qty, category_id, featured, new_arrival,
           weight, dimensions, is_active, created_at, updated_at
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
@@ -108,17 +206,110 @@ export class simpleAdminService {
         cleanPrice, cleanStockQty, cleanCategoryId, featured, new_arrival,
         cleanWeight, cleanDimensions, is_active
       ];
+
+      const result = await query(insertQuery, values);
       
-      const result = await client.query(insertQuery, values);
-      
-      await client.query('COMMIT');
+      if (result.rows.length === 0) {
+        throw new AppError('Failed to create product', 500, 'PRODUCT_CREATION_FAILED');
+      }
+
       return result.rows[0];
     } catch (error) {
-      await client.query('ROLLBACK');
-      logger.error('Error in createProduct:', error);
-      throw new Error('Failed to create product');
-    } finally {
-      client.release();
+      logDatabaseError('createProduct', error, { productData });
+      throw error;
+    }
+  }
+
+  /**
+   * Update an existing product
+   */
+  static async updateProduct(productId, productData) {
+    try {
+      // Clean and validate data
+      const {
+        name, sku, description, short_description, image_url,
+        price, stock_qty, category_id, featured, new_arrival,
+        weight, dimensions, is_active
+      } = productData;
+
+      // Clean short description (remove HTML tags)
+      const cleanShortDescription = short_description ? short_description.replace(/<[^>]*>/g, '') : null;
+      
+      // Clean image URL (remove HTML tags)
+      const cleanImageUrl = image_url ? image_url.replace(/<[^>]*>/g, '') : null;
+      
+      // Clean and validate price
+      const cleanPrice = parseFloat(price);
+      if (isNaN(cleanPrice) || cleanPrice < 0) {
+        throw new AppError('Invalid price value', 400, 'INVALID_PRICE');
+      }
+      
+      // Clean and validate stock quantity
+      const cleanStockQty = parseInt(stock_qty);
+      if (isNaN(cleanStockQty) || cleanStockQty < 0) {
+        throw new AppError('Invalid stock quantity', 400, 'INVALID_STOCK_QTY');
+      }
+      
+      // Clean and validate category ID
+      const cleanCategoryId = category_id ? parseInt(category_id) : null;
+      if (category_id && (isNaN(cleanCategoryId) || cleanCategoryId <= 0)) {
+        throw new AppError('Invalid category ID', 400, 'INVALID_CATEGORY_ID');
+      }
+      
+      // Clean and validate weight
+      const cleanWeight = weight ? parseFloat(weight) : null;
+      if (weight && (isNaN(cleanWeight) || cleanWeight < 0)) {
+        throw new AppError('Invalid weight value', 400, 'INVALID_WEIGHT');
+      }
+      
+      // Clean dimensions (allow any value)
+      const cleanDimensions = dimensions;
+
+      // Check if SKU already exists for other products
+      if (sku) {
+        const existingProduct = await simpleProductService.getProductBySku(sku);
+        if (existingProduct && existingProduct.id !== parseInt(productId)) {
+          throw new AppError('Product with this SKU already exists', 409, 'DUPLICATE_SKU');
+        }
+      }
+
+      const updateQuery = `
+        UPDATE products 
+        SET 
+          name = COALESCE($1, name),
+          sku = COALESCE($2, sku),
+          description = COALESCE($3, description),
+          short_description = COALESCE($4, short_description),
+          image_url = COALESCE($5, image_url),
+          price = COALESCE($6, price),
+          stock_qty = COALESCE($7, stock_qty),
+          category_id = COALESCE($8, category_id),
+          featured = COALESCE($9, featured),
+          new_arrival = COALESCE($10, new_arrival),
+          weight = COALESCE($11, weight),
+          dimensions = COALESCE($12, dimensions),
+          is_active = COALESCE($13, is_active),
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = $14
+        RETURNING *
+      `;
+
+      const values = [
+        name, sku, description, cleanShortDescription, cleanImageUrl,
+        cleanPrice, cleanStockQty, cleanCategoryId, featured, new_arrival,
+        cleanWeight, cleanDimensions, is_active, productId
+      ];
+
+      const result = await query(updateQuery, values);
+      
+      if (result.rows.length === 0) {
+        throw new AppError('Product not found', 404, 'PRODUCT_NOT_FOUND');
+      }
+
+      return result.rows[0];
+    } catch (error) {
+      logDatabaseError('updateProduct', error, { productId, productData });
+      throw error;
     }
   }
 
@@ -138,43 +329,6 @@ export class simpleAdminService {
     } catch (error) {
       logger.error('Error in getProductForAdmin:', error);
       throw new Error('Failed to fetch product');
-    }
-  }
-
-  static async updateProduct(id, updateData) {
-    const client = await getClient();
-    try {
-      await client.query('BEGIN');
-
-      const fields = Object.keys(updateData).filter(key => updateData[key] !== undefined);
-      if (fields.length === 0) {
-        throw new Error('No fields to update');
-      }
-
-      const setClause = fields.map((field, index) => `${field} = $${index + 2}`).join(', ');
-      const values = [id, ...fields.map(field => updateData[field])];
-
-      const updateQuery = `
-        UPDATE products 
-        SET ${setClause}, updated_at = CURRENT_TIMESTAMP
-        WHERE id = $1
-        RETURNING *
-      `;
-
-      const result = await client.query(updateQuery, values);
-      
-      if (result.rows.length === 0) {
-        throw new Error('Product not found');
-      }
-
-      await client.query('COMMIT');
-      return result.rows[0];
-    } catch (error) {
-      await client.query('ROLLBACK');
-      logger.error('Error in updateProduct:', error);
-      throw new Error('Failed to update product');
-    } finally {
-      client.release();
     }
   }
 
@@ -593,38 +747,101 @@ export class simpleAdminService {
   }
 
   // Analytics & Dashboard
-  static async getDashboardOverview() {
+  static async getTotalProducts() {
     try {
-      // Get basic counts
-      const countsResult = await query(`
-        SELECT 
-          (SELECT COUNT(*) FROM products WHERE is_active = true) as total_products,
-          (SELECT COUNT(*) FROM users WHERE is_active = true) as total_users,
-          (SELECT COUNT(*) FROM contacts WHERE status = 'unread') as unread_messages,
-          (SELECT COUNT(*) FROM carts WHERE status = 'active') as active_carts,
-          (SELECT COUNT(*) FROM categories WHERE is_active = true) as total_categories
-      `);
-      
-      // Get recent users for analytics
-      const recentUsersResult = await query(`
+      const result = await query('SELECT COUNT(*) as total FROM products WHERE is_active = true');
+      return parseInt(result.rows[0].total);
+    } catch (error) {
+      logDatabaseError('getTotalProducts', error);
+      throw error;
+    }
+  }
+
+  static async getTotalUsers() {
+    try {
+      const result = await query('SELECT COUNT(*) as total FROM users WHERE is_active = true');
+      return parseInt(result.rows[0].total);
+    } catch (error) {
+      logDatabaseError('getTotalUsers', error);
+      throw error;
+    }
+  }
+
+  static async getTotalOrders() {
+    try {
+      const result = await query('SELECT COUNT(*) as total FROM carts WHERE status = \'active\'');
+      return parseInt(result.rows[0].total);
+    } catch (error) {
+      logDatabaseError('getTotalOrders', error);
+      throw error;
+    }
+  }
+
+  static async getTotalRevenue() {
+    try {
+      const result = await query('SELECT COALESCE(SUM(total_amount), 0) as total_revenue FROM carts WHERE status = \'active\'');
+      return parseFloat(result.rows[0].total_revenue);
+    } catch (error) {
+      logDatabaseError('getTotalRevenue', error);
+      throw error;
+    }
+  }
+
+  static async getUnreadMessages() {
+    try {
+      const result = await query('SELECT COUNT(*) as total FROM contacts WHERE status = \'unread\'');
+      return parseInt(result.rows[0].total);
+    } catch (error) {
+      logDatabaseError('getUnreadMessages', error);
+      throw error;
+    }
+  }
+
+  static async getTotalCategories() {
+    try {
+      const result = await query('SELECT COUNT(*) as total FROM categories WHERE is_active = true');
+      return parseInt(result.rows[0].total);
+    } catch (error) {
+      logDatabaseError('getTotalCategories', error);
+      throw error;
+    }
+  }
+
+  static async getRecentUsers() {
+    try {
+      const result = await query(`
         SELECT id, name, email, created_at, role
         FROM users 
         WHERE is_active = true 
         ORDER BY created_at DESC 
         LIMIT 5
       `);
-      
-      // Get top products by stock
-      const topProductsResult = await query(`
+      return result.rows;
+    } catch (error) {
+      logDatabaseError('getRecentUsers', error);
+      throw error;
+    }
+  }
+
+  static async getTopProducts() {
+    try {
+      const result = await query(`
         SELECT id, name, stock_qty, price, created_at
         FROM products 
         WHERE is_active = true 
         ORDER BY stock_qty DESC 
         LIMIT 5
       `);
-      
-      // Get recent activity (simplified for now)
-      const recentActivityResult = await query(`
+      return result.rows;
+    } catch (error) {
+      logDatabaseError('getTopProducts', error);
+      throw error;
+    }
+  }
+
+  static async getRecentActivity() {
+    try {
+      const result = await query(`
         SELECT 
           'New user registered' as description,
           created_at as timestamp,
@@ -641,82 +858,66 @@ export class simpleAdminService {
         ORDER BY timestamp DESC 
         LIMIT 10
       `);
-      
-      // Calculate total revenue (from active carts)
-      const revenueResult = await query(`
-        SELECT COALESCE(SUM(total_amount), 0) as total_revenue
-        FROM carts 
-        WHERE status = 'active'
-      `);
-      
-      const counts = countsResult.rows[0];
-      
-      return {
-        totalProducts: parseInt(counts.total_products) || 0,
-        totalUsers: parseInt(counts.total_users) || 0,
-        totalOrders: parseInt(counts.active_carts) || 0,
-        totalRevenue: parseFloat(revenueResult.rows[0].total_revenue) || 0,
-        unreadMessages: parseInt(counts.unread_messages) || 0,
-        totalCategories: parseInt(counts.total_categories) || 0,
-        recentUsers: recentUsersResult.rows,
-        topProducts: topProductsResult.rows,
-        recentActivity: recentActivityResult.rows
-      };
+      return result.rows;
     } catch (error) {
-      logger.error('Error in getDashboardOverview:', error);
-      throw new Error('Failed to fetch dashboard overview');
+      logDatabaseError('getRecentActivity', error);
+      throw error;
     }
   }
 
-  static async getProductAnalytics(period = '30d') {
+  static async getCategoryAnalytics() {
     try {
-      let dateFilter = '';
-      if (period === '7d') {
-        dateFilter = "AND p.created_at >= CURRENT_DATE - INTERVAL '7 days'";
-      } else if (period === '30d') {
-        dateFilter = "AND p.created_at >= CURRENT_DATE - INTERVAL '30 days'";
-      } else if (period === '90d') {
-        dateFilter = "AND p.created_at >= CURRENT_DATE - INTERVAL '90 days'";
-      }
-
-      // Get category-based analytics
-      const categoryAnalytics = await query(`
+      const result = await query(`
         SELECT 
           c.name as category_name,
           COUNT(p.id) as product_count,
           AVG(p.price) as avg_price,
           SUM(p.stock_qty) as total_stock
         FROM categories c
-        LEFT JOIN products p ON c.id = p.category_id AND p.is_active = true ${dateFilter}
-        WHERE c.is_active = true
+        LEFT JOIN products p ON c.id = p.category_id AND p.is_active = true
         GROUP BY c.id, c.name
         ORDER BY product_count DESC
       `);
-      
-      // Get top products by stock (for the frontend topProducts display)
-      const topProducts = await query(`
-        SELECT 
-          p.id,
-          p.name,
-          p.stock_qty,
-          p.price,
-          p.created_at,
-          c.name as category_name
-        FROM products p
-        LEFT JOIN categories c ON p.category_id = c.id
-        WHERE p.is_active = true ${dateFilter}
-        ORDER BY p.stock_qty DESC
-        LIMIT 10
-      `);
-      
-      return {
-        categoryAnalytics: categoryAnalytics.rows,
-        topProducts: topProducts.rows,
-        period: period
-      };
+      return result.rows;
     } catch (error) {
-      logger.error('Error in getProductAnalytics:', error);
-      throw new Error('Failed to fetch product analytics');
+      logDatabaseError('getCategoryAnalytics', error);
+      throw error;
+    }
+  }
+
+  static async getUserGrowth() {
+    try {
+      const result = await query(`
+        SELECT 
+          DATE(created_at) as date,
+          COUNT(*) as new_users,
+          role
+        FROM users
+        WHERE is_active = true
+        GROUP BY DATE(created_at), role
+        ORDER BY date DESC, role
+        LIMIT 90
+      `);
+      return result.rows;
+    } catch (error) {
+      logDatabaseError('getUserGrowth', error);
+      throw error;
+    }
+  }
+
+  static async getUserRoleDistribution() {
+    try {
+      const result = await query(`
+        SELECT 
+          COUNT(CASE WHEN role = 'admin' THEN 1 END) as admin_count,
+          COUNT(CASE WHEN role = 'user' THEN 1 END) as user_count
+        FROM users
+        WHERE is_active = true
+      `);
+      return result.rows[0];
+    } catch (error) {
+      logDatabaseError('getUserRoleDistribution', error);
+      throw error;
     }
   }
 
@@ -748,69 +949,6 @@ export class simpleAdminService {
     } catch (error) {
       logger.error('Error in getSalesAnalytics:', error);
       throw new Error('Failed to fetch sales analytics');
-    }
-  }
-
-  static async getUserAnalytics(period = '30d') {
-    try {
-      let dateFilter = '';
-      if (period === '7d') {
-        dateFilter = "AND created_at >= CURRENT_DATE - INTERVAL '7 days'";
-      } else if (period === '30d') {
-        dateFilter = "AND created_at >= CURRENT_DATE - INTERVAL '30 days'";
-      } else if (period === '90d') {
-        dateFilter = "AND created_at >= CURRENT_DATE - INTERVAL '90 days'";
-      }
-
-      // Get user growth over time
-      const userGrowth = await query(`
-        SELECT 
-          DATE(created_at) as date,
-          COUNT(*) as new_users,
-          role
-        FROM users
-        WHERE is_active = true ${dateFilter}
-        GROUP BY DATE(created_at), role
-        ORDER BY date DESC, role
-        LIMIT 90
-      `);
-      
-      // Get recent users for the dashboard
-      const recentUsers = await query(`
-        SELECT 
-          id, 
-          name, 
-          email, 
-          role, 
-          created_at,
-          last_login
-        FROM users
-        WHERE is_active = true
-        ORDER BY created_at DESC
-        LIMIT 10
-      `);
-      
-      // Get user statistics
-      const userStats = await query(`
-        SELECT 
-          COUNT(*) as total_users,
-          COUNT(CASE WHEN role = 'admin' THEN 1 END) as admin_count,
-          COUNT(CASE WHEN role = 'user' THEN 1 END) as user_count,
-          COUNT(CASE WHEN last_login >= CURRENT_DATE - INTERVAL '7 days' THEN 1 END) as active_users_7d,
-          COUNT(CASE WHEN last_login >= CURRENT_DATE - INTERVAL '30 days' THEN 1 END) as active_users_30d
-        FROM users
-        WHERE is_active = true
-      `);
-      
-      return {
-        userGrowth: userGrowth.rows,
-        recentUsers: recentUsers.rows,
-        userStats: userStats.rows[0],
-        period: period
-      };
-    } catch (error) {
-      logger.error('Error in getUserAnalytics:', error);
-      throw new Error('Failed to fetch user analytics');
     }
   }
 

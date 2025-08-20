@@ -10,6 +10,7 @@ import { Checkbox } from './ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from './ui/form';
+import ImageUpload from './ImageUpload';
 
 // Zod validation schema
 const productSchema = z.object({
@@ -37,6 +38,8 @@ const productSchema = z.object({
 });
 
 export default function ProductModal({ product, categories, onClose, onSubmit, isLoading }) {
+  const [productImage, setProductImage] = useState(product?.image_url || null);
+
   const form = useForm({
     resolver: zodResolver(productSchema),
     defaultValues: {
@@ -59,6 +62,18 @@ export default function ProductModal({ product, categories, onClose, onSubmit, i
   // Update form data when product changes
   useEffect(() => {
     if (product) {
+      const imageData = product.image_url ? {
+        url: product.image_url,
+        public_id: `product_${product.id}`,
+        secure_url: product.image_url,
+        original_name: 'product_image.jpg',
+        format: 'JPG',
+        size: 0,
+        width: 800,
+        height: 600
+      } : null;
+      
+      setProductImage(imageData);
       form.reset({
         name: product.name || '',
         sku: product.sku || '',
@@ -75,12 +90,18 @@ export default function ProductModal({ product, categories, onClose, onSubmit, i
         is_active: product.is_active ?? true,
       });
     } else {
+      setProductImage(null);
       form.reset({
         name: '',
         sku: '',
         description: '',
         short_description: '',
         image_url: '',
+        image_public_id: '',
+        image_format: '',
+        image_size: undefined,
+        image_width: undefined,
+        image_height: undefined,
         price: '',
         stock_qty: '',
         category_id: undefined,
@@ -93,11 +114,28 @@ export default function ProductModal({ product, categories, onClose, onSubmit, i
     }
   }, [product, form]);
 
+  // Handle image changes
+  const handleImageChange = (imageData) => {
+    setProductImage(imageData);
+    form.setValue('image_url', imageData?.url || '');
+  };
+
+  const handleImageRemove = () => {
+    setProductImage(null);
+    form.setValue('image_url', '');
+  };
+
   const handleSubmit = (data) => {
+    // Include the current image data in the submission
+    const submitData = {
+      ...data,
+      image_url: productImage?.url || data.image_url
+    };
+
     if (product) {
-      onSubmit(product.id, data);
+      onSubmit(product.id, submitData);
     } else {
-      onSubmit(data);
+      onSubmit(submitData);
     }
   };
 
@@ -203,16 +241,14 @@ export default function ProductModal({ product, categories, onClose, onSubmit, i
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Image URL
+                        Product Image
                       </FormLabel>
-                      <FormControl>
-                        <Input
-                          type="url"
-                          placeholder="https://example.com/image.jpg"
-                          {...field}
-                          className="w-full"
-                        />
-                      </FormControl>
+                      <ImageUpload
+                        currentImage={productImage}
+                        onImageChange={handleImageChange}
+                        onImageRemove={handleImageRemove}
+                        disabled={isLoading}
+                      />
                       <FormMessage />
                     </FormItem>
                   )}

@@ -153,34 +153,35 @@ export const contactSchemas = {
 
 export const adminSchemas = {
   createProduct: Joi.object({
-    sku: Joi.string().min(3).max(50).required(),
-    name: Joi.string().min(3).max(200).required(),
-    description: Joi.string().optional(),
-    short_description: Joi.string().max(500).optional(),
-    image_url: Joi.string().uri().allow('').optional(),
-    price: Joi.number().positive().required(),
-    stock_qty: Joi.number().integer().min(0).default(0),
-    category_id: Joi.number().integer().positive().optional(),
-    featured: Joi.boolean().default(false),
-    new_arrival: Joi.boolean().default(false),
-    weight: Joi.number().positive().optional(),
-    dimensions: Joi.any().optional(),
-    is_active: Joi.boolean().default(true)
+    name: Joi.string().required().min(2).max(255),
+    sku: Joi.string().required().min(2).max(100),
+    description: Joi.string().allow('', null),
+    short_description: Joi.string().allow('', null),
+    image_url: Joi.string().allow('', null),
+    price: Joi.number().required().min(0),
+    stock_qty: Joi.number().integer().required().min(0),
+    category_id: Joi.number().integer().allow(null),
+    featured: Joi.boolean(),
+    new_arrival: Joi.boolean(),
+    weight: Joi.number().min(0).allow(null),
+    dimensions: Joi.any().allow(null),
+    is_active: Joi.boolean()
   }),
 
   updateProduct: Joi.object({
-    name: Joi.string().min(3).max(200).optional(),
-    description: Joi.string().optional(),
-    short_description: Joi.string().max(500).optional(),
-    image_url: Joi.string().uri().allow('').optional(),
-    price: Joi.number().positive().optional(),
-    stock_qty: Joi.number().integer().min(0).optional(),
-    category_id: Joi.number().integer().positive().optional(),
-    featured: Joi.boolean().optional(),
-    new_arrival: Joi.boolean().optional(),
-    weight: Joi.number().positive().optional(),
-    dimensions: Joi.any().optional(),
-    is_active: Joi.boolean().optional()
+    name: Joi.string().min(2).max(255),
+    sku: Joi.string().min(2).max(100),
+    description: Joi.string().allow('', null),
+    short_description: Joi.string().allow('', null),
+    image_url: Joi.string().allow('', null),
+    price: Joi.number().min(0),
+    stock_qty: Joi.number().integer().min(0),
+    category_id: Joi.number().integer().allow(null),
+    featured: Joi.boolean(),
+    new_arrival: Joi.boolean(),
+    weight: Joi.number().min(0).allow(null),
+    dimensions: Joi.any().allow(null),
+    is_active: Joi.boolean()
   }),
 
   createCategory: Joi.object({
