@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Search, Edit, Trash2, User, Mail, Phone, MapPin, Shield, Calendar } from 'lucide-react';
 import adminService from '../services/adminService';
+import { userToast } from '../services/toastService';
+import { extractErrorMessage } from '../utils/errorHandler';
 
 export default function Users() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -11,7 +13,7 @@ export default function Users() {
   
   const queryClient = useQueryClient();
 
-  const { data: usersData, isLoading } = useQuery({
+  const { data: usersData, isLoading, error } = useQuery({
     queryKey: ['admin-users', currentPage, searchTerm, selectedRole],
     queryFn: () => adminService.getUsers({
       page: currentPage,
@@ -19,29 +21,53 @@ export default function Users() {
       search: searchTerm,
       role: selectedRole
     }),
+    onError: (error) => {
+      const errorMessage = extractErrorMessage(error, 'Failed to fetch users');
+      userToast.fetchError(errorMessage);
+    }
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => adminService.updateUser(id, data),
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      const userName = variables.data.name;
+      userToast.updated(userName);
       queryClient.invalidateQueries(['admin-users']);
       setEditingUser(null);
     },
+    onError: (error) => {
+      const errorMessage = extractErrorMessage(error, 'Failed to update user');
+      userToast.updateError(errorMessage);
+    }
   });
 
   const deleteMutation = useMutation({
     mutationFn: adminService.deleteUser,
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      // Find the user name from the current data or use a generic message
+      const deletedUser = usersData?.data?.users?.find(u => u.id === variables);
+      const userName = deletedUser?.name || 'User';
+      userToast.deleted(userName);
       queryClient.invalidateQueries(['admin-users']);
     },
+    onError: (error) => {
+      console.log('delete error', error);
+      const errorMessage = extractErrorMessage(error, 'Failed to delete user');
+      userToast.deleteError(errorMessage);
+    }
   });
 
   const handleUpdate = (id, userData) => {
+    userToast.loading();
     updateMutation.mutate({ id, data: userData });
   };
 
   const handleDelete = (id) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
+    const userToDelete = usersData?.data?.users?.find(u => u.id === id);
+    const userName = userToDelete?.name || 'User';
+    
+    if (window.confirm(`Are you sure you want to delete user "${userName}"? This action cannot be undone.`)) {
+      userToast.loading();
       deleteMutation.mutate(id);
     }
   };
@@ -109,6 +135,27 @@ export default function Users() {
 
       {/* Users Table */}
       <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+        {/* Error Display */}
+        {error && (
+          <div className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-400 p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800 dark:text-red-200">
+                  Error loading users
+                </h3>
+                <div className="mt-2 text-sm text-red-700 dark:text-red-300">
+                  {extractErrorMessage(error, 'An error occurred while fetching users. Please try again.')}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-700">
@@ -133,14 +180,44 @@ export default function Users() {
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {isLoading ? (
                 <tr>
-                  <td colSpan="5" className="px-6 py-4 text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  <td colSpan="5" className="px-6 py-8 text-center">
+                    <div className="flex flex-col items-center space-y-3">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Loading users...</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : error ? (
+                <tr>
+                  <td colSpan="5" className="px-6 py-8 text-center">
+                    <div className="flex flex-col items-center space-y-3">
+                      <div className="h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+                        <svg className="h-6 w-6 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                        </svg>
+                      </div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        Failed to load users. Please try refreshing the page.
+                      </div>
+                    </div>
                   </td>
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
-                    No users found
+                  <td colSpan="5" className="px-6 py-8 text-center">
+                    <div className="flex flex-col items-center space-y-3">
+                      <div className="h-12 w-12 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                        <User className="h-6 w-6 text-gray-400" />
+                      </div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        No users found
+                      </div>
+                      {searchTerm || selectedRole ? (
+                        <p className="text-xs text-gray-400 dark:text-gray-500">
+                          Try adjusting your search criteria
+                        </p>
+                      ) : null}
+                    </div>
                   </td>
                 </tr>
               ) : (
@@ -202,16 +279,24 @@ export default function Users() {
                       <div className="flex justify-end space-x-2">
                         <button
                           onClick={() => setEditingUser(user)}
-                          className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                          disabled={updateMutation.isPending || deleteMutation.isPending}
+                          className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Edit user"
                         >
                           <Edit className="h-4 w-4" />
                         </button>
                         {user.role !== 'admin' && (
                           <button
                             onClick={() => handleDelete(user.id)}
-                            className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                            disabled={updateMutation.isPending || deleteMutation.isPending}
+                            className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Delete user"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            {deleteMutation.isPending && deleteMutation.variables === user.id ? (
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
                           </button>
                         )}
                       </div>
@@ -318,9 +403,10 @@ function UserModal({ user, onClose, onSubmit, isLoading }) {
               <input
                 type="text"
                 required
+                disabled={isLoading}
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
             
@@ -331,9 +417,10 @@ function UserModal({ user, onClose, onSubmit, isLoading }) {
               <input
                 type="email"
                 required
+                disabled={isLoading}
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
             
@@ -342,9 +429,10 @@ function UserModal({ user, onClose, onSubmit, isLoading }) {
                 Role
               </label>
               <select
+                disabled={isLoading}
                 value={formData.role}
                 onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <option value="user">User</option>
                 <option value="admin">Admin</option>
@@ -355,9 +443,10 @@ function UserModal({ user, onClose, onSubmit, isLoading }) {
               <input
                 type="checkbox"
                 id="is_active"
+                disabled={isLoading}
                 checked={formData.is_active}
                 onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
               />
               <label htmlFor="is_active" className="ml-2 block text-sm text-gray-900 dark:text-white">
                 Active
@@ -367,17 +456,25 @@ function UserModal({ user, onClose, onSubmit, isLoading }) {
             <div className="flex justify-end space-x-3 pt-4">
               <button
                 type="button"
+                disabled={isLoading}
                 onClick={onClose}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isLoading}
-                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
               >
-                {isLoading ? 'Updating...' : 'Update'}
+                {isLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Updating...</span>
+                  </>
+                ) : (
+                  'Update'
+                )}
               </button>
             </div>
           </form>

@@ -31,7 +31,7 @@ const Products = () => {
     if (authService.isAuthenticated()) {
       loadCartCount();
     }
-  }, [selectedCategory, sortBy, sortOrder]);
+  }, [sortBy, sortOrder]);
 
   // Listen for cart updates
   useEffect(() => {
@@ -197,7 +197,7 @@ const Products = () => {
       try {
         const response = await productService.searchProducts(searchQuery);
         if (response.success && response.data.products) {
-          if (categoryId) {
+          if (categoryId && categoryId !== "") {
             // Filter search results by new category
             const filteredResults = response.data.products.filter(product => 
               product.category_id === parseInt(categoryId)
@@ -205,7 +205,7 @@ const Products = () => {
             setProducts(filteredResults);
             toastService.show(`Showing ${filteredResults.length} products in "${categories.find(c => c.id === parseInt(categoryId))?.name}" category for "${searchQuery}"`, 'info');
           } else {
-            // Show all search results
+            // Show all search results when no category is selected
             setProducts(response.data.products);
             toastService.show(`Showing all ${response.data.products.length} search results for "${searchQuery}"`, 'info');
           }
@@ -214,8 +214,37 @@ const Products = () => {
         console.error('Error filtering search results by category:', error);
         toastService.show('Failed to filter search results by category', 'error');
       }
+    } else {
+      // If not in search mode, load products with new category filter
+      try {
+        setLoading(true);
+        const filters = {
+          category: categoryId || undefined,
+          sortBy,
+          sortOrder
+        };
+        
+        const response = await productService.getProducts(filters);
+        
+        if (response.success && response.data.products) {
+          setProducts(response.data.products);
+          if (categoryId && categoryId !== "") {
+            const categoryName = categories.find(c => c.id === parseInt(categoryId))?.name;
+            toastService.show(`Showing ${response.data.products.length} products in ${categoryName} category`, 'info');
+          } else {
+            toastService.show(`Showing all ${response.data.products.length} products`, 'info');
+          }
+        } else {
+          setProducts([]);
+        }
+      } catch (error) {
+        toastService.show("Failed to load products", "error");
+        console.error("Error loading products:", error);
+        setProducts([]);
+      } finally {
+        setLoading(false);
+      }
     }
-    // If not in search mode, the useEffect will handle loading products with new category
   };
 
   const handleSortChange = async (sortValue) => {
@@ -312,7 +341,6 @@ const Products = () => {
                   value={selectedCategory}
                   onChange={(e) => handleCategoryChange(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                  disabled={isSearchMode}
                 >
                   <option value="">All Categories</option>
                   {categories.map((category) => (

@@ -55,12 +55,7 @@ export default function Dashboard() {
     queryFn: adminService.getProductAnalytics,
   });
 
-  const { data: userAnalytics, isLoading: userAnalyticsLoading } = useQuery({
-    queryKey: ['user-analytics'],
-    queryFn: adminService.getUserAnalytics,
-  });
-
-  if (overviewLoading || productAnalyticsLoading || userAnalyticsLoading) {
+  if (overviewLoading || productAnalyticsLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
@@ -157,7 +152,7 @@ export default function Dashboard() {
             Recent User Registrations
           </h3>
           <div className="space-y-3">
-            {userAnalytics?.data?.recentUsers?.slice(0, 5).map((user) => (
+            {overview?.data?.recentUsers?.slice(0, 5).map((user) => (
               <div key={user.id} className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <div className="h-8 w-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
@@ -179,7 +174,7 @@ export default function Dashboard() {
                 </span>
               </div>
             ))}
-            {(!userAnalytics?.data?.recentUsers || userAnalytics.data.recentUsers.length === 0) && (
+            {(!overview?.data?.recentUsers || overview.data.recentUsers.length === 0) && (
               <div className="text-center text-gray-500 dark:text-gray-400 py-4">
                 No users found
               </div>

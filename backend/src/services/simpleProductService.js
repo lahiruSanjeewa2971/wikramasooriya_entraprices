@@ -21,8 +21,8 @@ export const simpleProductService = {
     let paramIndex = 1;
 
     if (category) {
-      whereClause += ` AND c.name ILIKE $${paramIndex}`;
-      params.push(`%${category}%`);
+      whereClause += ` AND p.category_id = $${paramIndex}`;
+      params.push(parseInt(category));
       paramIndex++;
     }
 

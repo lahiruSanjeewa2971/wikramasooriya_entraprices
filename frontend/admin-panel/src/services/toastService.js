@@ -139,3 +139,110 @@ export const categoryToast = {
     });
   }
 };
+
+// User-specific toast notifications
+export const userToast = {
+  // Success toasts
+  updated: (userName) => {
+    toast.success(`User "${userName}" updated successfully!`, {
+      position: "top-right",
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
+  },
+
+  deleted: (userName) => {
+    toast.success(`User "${userName}" deleted successfully!`, {
+      position: "top-right",
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
+  },
+
+  // Error toasts
+  updateError: (error) => {
+    toast.error(`Failed to update user: ${error}`, {
+      position: "top-right",
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
+  },
+
+  deleteError: (error) => {
+    toast.error(`Failed to delete user: ${error}`, {
+      position: "top-right",
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
+  },
+
+  fetchError: (error) => {
+    toast.error(`Failed to fetch users: ${error}`, {
+      position: "top-right",
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
+  },
+
+  // Warning toasts
+  deleteWarning: (userName) => {
+    toast.warning(`Are you sure you want to delete user "${userName}"? This action cannot be undone.`, {
+      position: "top-right",
+      autoClose: 8000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
+  },
+
+  // Info toasts
+  loading: () => {
+    toast.info('Processing user operation...', {
+      position: "top-right",
+      autoClose: 2000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
+  },
+
+  // Generic success and error
+  success: (message) => {
+    toast.success(message, {
+      position: "top-right",
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
+  },
+
+  error: (message) => {
+    toast.error(message, {
+      position: "top-right",
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
+  }
+};

@@ -602,6 +602,38 @@ export class simpleAdminService {
 
   static async checkUserActiveData(userId) {
     try {
+      // First, let's see what cart statuses exist for this user
+      const cartStatuses = await query(`
+        SELECT DISTINCT status, COUNT(*) as count 
+        FROM carts 
+        WHERE user_id = $1 
+        GROUP BY status
+      `, [userId]);
+      
+      console.log(`User ${userId} cart statuses:`, cartStatuses.rows);
+      
+      // Check for any carts (regardless of status)
+      const anyCarts = await query(`
+        SELECT COUNT(*) as total_carts
+        FROM carts 
+        WHERE user_id = $1
+      `, [userId]);
+      
+      const totalCarts = parseInt(anyCarts.rows[0].total_carts);
+      console.log(`User ${userId} total carts:`, totalCarts);
+      
+      // Check for any cart items
+      const anyCartItems = await query(`
+        SELECT COUNT(*) as total_items
+        FROM cart_items ci 
+        JOIN carts c ON ci.cart_id = c.id 
+        WHERE c.user_id = $1
+      `, [userId]);
+      
+      const totalItems = parseInt(anyCartItems.rows[0].total_items);
+      console.log(`User ${userId} total cart items:`, totalItems);
+      
+      // Original check for active carts
       const result = await query(`
         SELECT 
           (SELECT COUNT(*) FROM carts WHERE user_id = $1 AND status = 'active') as active_carts,
@@ -609,7 +641,17 @@ export class simpleAdminService {
       `, [userId]);
       
       const { active_carts, cart_items } = result.rows[0];
-      return parseInt(active_carts) > 0 || parseInt(cart_items) > 0;
+      
+      // Debug logging
+      console.log(`User ${userId} active cart check:`, { active_carts, cart_items });
+      
+      // TEMPORARILY: Only block if there are actual active carts with items
+      // This will help us debug the issue
+      const hasActiveData = parseInt(active_carts) > 0 && parseInt(cart_items) > 0;
+      
+      console.log(`User ${userId} has active data:`, hasActiveData);
+      
+      return hasActiveData;
     } catch (error) {
       logger.error('Error in checkUserActiveData:', error);
       throw new Error('Failed to check user active data');
