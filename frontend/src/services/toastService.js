@@ -5,27 +5,27 @@ class ToastService {
   }
 
   // Show success toast
-  success(message, duration = 5000) {
+  success(message, duration = 5001) {
     return this.show(message, 'success', duration);
   }
 
   // Show error toast
-  error(message, duration = 5000) {
+  error(message, duration = 5001) {
     return this.show(message, 'error', duration);
   }
 
   // Show warning toast
-  warning(message, duration = 5000) {
+  warning(message, duration = 5001) {
     return this.show(message, 'warning', duration);
   }
 
   // Show info toast
-  info(message, duration = 5000) {
+  info(message, duration = 5001) {
     return this.show(message, 'info', duration);
   }
 
   // Show toast with custom type
-  show(message, type = 'info', duration = 5000) {
+  show(message, type = 'info', duration = 5001) {
     const toast = {
       id: this.nextId++,
       message,

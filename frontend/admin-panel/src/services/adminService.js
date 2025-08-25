@@ -111,17 +111,42 @@ class AdminService {
     return response.data;
   }
 
-  // Excel Upload
-  async uploadExcel(file) {
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    const response = await apiClient.post('/admin/upload/excel', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
+  // Excel Upload Methods
+  async uploadExcel(formData) {
+    try {
+      const response = await apiClient.post('/excel/upload-products', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to upload Excel file');
+    }
+  }
+
+  async validateExcel(formData) {
+    try {
+      const response = await apiClient.post('/excel/validate', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to validate Excel file');
+    }
+  }
+
+  async downloadExcelTemplate() {
+    try {
+      const response = await apiClient.get('/excel/template', {
+        responseType: 'blob',
+      });
+      return response;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to download template');
+    }
   }
 }
 

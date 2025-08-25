@@ -10,7 +10,8 @@ import {
   Menu, 
   X,
   LogOut,
-  Image
+  Image,
+  FileSpreadsheet
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeProvider';
 import authService from '../services/authService';
@@ -21,7 +22,7 @@ const navigation = [
   { name: 'Categories', href: '/categories', icon: Tags },
   { name: 'Users', href: '/users', icon: Users },
   { name: 'Contacts', href: '/contacts', icon: MessageSquare },
-  { name: 'Excel Upload', href: '/excel-upload', icon: Upload },
+  { name: 'Excel Upload', href: '/excel-upload', icon: FileSpreadsheet },
   { name: 'Image Upload Demo', href: '/image-upload-demo', icon: Image },
 ];
 

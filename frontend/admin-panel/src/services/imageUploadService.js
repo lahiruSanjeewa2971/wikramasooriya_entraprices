@@ -29,11 +29,8 @@ class ImageUploadService {
       formData.append('folder', folder);
       formData.append('timestamp', Date.now().toString());
 
-      // Upload with progress tracking
+      // Upload with progress tracking - don't set Content-Type header, let browser set it
       const response = await apiClient.post('/upload/image', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
         onUploadProgress: (progressEvent) => {
           if (onProgress && progressEvent.total) {
             const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
@@ -77,7 +74,9 @@ class ImageUploadService {
    */
   static async deleteImage(publicId) {
     try {
-      const response = await apiClient.delete(`/upload/image/${publicId}`);
+      // URL encode the public ID to handle forward slashes properly
+      const encodedPublicId = encodeURIComponent(publicId);
+      const response = await apiClient.delete(`/upload/image/${encodedPublicId}`);
       
       if (response.data && response.data.success) {
         return response.data;

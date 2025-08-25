@@ -31,7 +31,7 @@ function ToastContainerWithTheme() {
   return (
     <ToastContainer
       position="top-right"
-      autoClose={5000}
+      autoClose={5001}
       hideProgressBar={false}
       newestOnTop={false}
       closeOnClick

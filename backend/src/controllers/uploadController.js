@@ -2,9 +2,19 @@ import { AppError } from '../middleware/errorHandler.js';
 import { logApiError } from '../utils/logger.js';
 import cloudinary from 'cloudinary';
 import fs from 'fs';
-import { configureCloudinary } from '../middleware/upload.js';
 
 export default class UploadController {
+  /**
+   * Configure Cloudinary
+   */
+  static configureCloudinary() {
+    cloudinary.v2.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET
+    });
+  }
+
   /**
    * Upload a single image
    */
@@ -15,7 +25,7 @@ export default class UploadController {
       }
 
       // Configure Cloudinary before use
-      configureCloudinary();
+      UploadController.configureCloudinary();
 
       // Upload to Cloudinary using file path
       const uploadResult = await cloudinary.v2.uploader.upload(req.file.path, {
@@ -75,7 +85,7 @@ export default class UploadController {
       }
 
       // Configure Cloudinary before use
-      configureCloudinary();
+      UploadController.configureCloudinary();
 
       // Delete from Cloudinary
       const result = await cloudinary.v2.uploader.destroy(publicId);
@@ -107,7 +117,7 @@ export default class UploadController {
       }
 
       // Configure Cloudinary before use
-      configureCloudinary();
+      UploadController.configureCloudinary();
 
       // Get image info from Cloudinary
       const result = await cloudinary.v2.api.resource(publicId);

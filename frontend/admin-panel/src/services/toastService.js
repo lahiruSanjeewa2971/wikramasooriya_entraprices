@@ -40,7 +40,7 @@ export const categoryToast = {
   createError: (error) => {
     toast.error(`Failed to create category: ${error}`, {
       position: "top-right",
-      autoClose: 5000,
+      autoClose: 5001,
       hideProgressBar: false,
       closeOnClick: true,
       pauseOnHover: true,
@@ -51,7 +51,7 @@ export const categoryToast = {
   updateError: (error) => {
     toast.error(`Failed to update category: ${error}`, {
       position: "top-right",
-      autoClose: 5000,
+      autoClose: 5001,
       hideProgressBar: false,
       closeOnClick: true,
       pauseOnHover: true,
@@ -62,7 +62,7 @@ export const categoryToast = {
   deleteError: (error) => {
     toast.error(`Failed to delete category: ${error}`, {
       position: "top-right",
-      autoClose: 5000,
+      autoClose: 5001,
       hideProgressBar: false,
       closeOnClick: true,
       pauseOnHover: true,
@@ -73,7 +73,7 @@ export const categoryToast = {
   fetchError: (error) => {
     toast.error(`Failed to fetch categories: ${error}`, {
       position: "top-right",
-      autoClose: 5000,
+      autoClose: 5001,
       hideProgressBar: false,
       closeOnClick: true,
       pauseOnHover: true,
@@ -96,7 +96,7 @@ export const categoryToast = {
   nameExists: (categoryName) => {
     toast.warning(`Category name "${categoryName}" already exists. Please choose a different name.`, {
       position: "top-right",
-      autoClose: 5000,
+      autoClose: 5001,
       hideProgressBar: false,
       closeOnClick: true,
       pauseOnHover: true,
@@ -131,7 +131,7 @@ export const categoryToast = {
   error: (message) => {
     toast.error(message, {
       position: "top-right",
-      autoClose: 5000,
+      autoClose: 5001,
       hideProgressBar: false,
       closeOnClick: true,
       pauseOnHover: true,
@@ -169,7 +169,7 @@ export const userToast = {
   updateError: (error) => {
     toast.error(`Failed to update user: ${error}`, {
       position: "top-right",
-      autoClose: 5000,
+      autoClose: 5001,
       hideProgressBar: false,
       closeOnClick: true,
       pauseOnHover: true,
@@ -180,7 +180,7 @@ export const userToast = {
   deleteError: (error) => {
     toast.error(`Failed to delete user: ${error}`, {
       position: "top-right",
-      autoClose: 5000,
+      autoClose: 5001,
       hideProgressBar: false,
       closeOnClick: true,
       pauseOnHover: true,
@@ -191,7 +191,7 @@ export const userToast = {
   fetchError: (error) => {
     toast.error(`Failed to fetch users: ${error}`, {
       position: "top-right",
-      autoClose: 5000,
+      autoClose: 5001,
       hideProgressBar: false,
       closeOnClick: true,
       pauseOnHover: true,
@@ -238,7 +238,7 @@ export const userToast = {
   error: (message) => {
     toast.error(message, {
       position: "top-right",
-      autoClose: 5000,
+      autoClose: 5001,
       hideProgressBar: false,
       closeOnClick: true,
       pauseOnHover: true,

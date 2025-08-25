@@ -1,5 +1,5 @@
 import express from 'express';
-import upload, { handleUploadError } from '../middleware/upload.js';
+import { uploadImage } from '../middleware/upload.js';
 import UploadController from '../controllers/uploadController.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import { authenticateToken } from '../middleware/auth.js';
@@ -11,8 +11,7 @@ router.use(authenticateToken);
 
 // Upload single image
 router.post('/image', 
-  upload.single('image'), 
-  handleUploadError,
+  uploadImage.single('image'), 
   asyncHandler(UploadController.uploadImage)
 );
 

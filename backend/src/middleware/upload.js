@@ -1,28 +1,12 @@
 import multer from 'multer';
-import cloudinary from 'cloudinary';
 import { AppError } from './errorHandler.js';
 import path from 'path';
 import fs from 'fs';
 
-// Cloudinary configuration will be done when needed
-let cloudinaryConfigured = false;
-
-function configureCloudinary() {
-  if (!cloudinaryConfigured) {
-    cloudinary.v2.config({
-      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-      api_key: process.env.CLOUDINARY_API_KEY,
-      api_secret: process.env.CLOUDINARY_API_SECRET,
-    });
-    cloudinaryConfigured = true;
-  }
-}
-
-// Use disk storage for file processing
-const storage = multer.diskStorage({
+// Local storage for images (temporary, will be uploaded to Cloudinary by controller)
+const imageStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = './uploads';
-    // Create uploads directory if it doesn't exist
+    const uploadDir = 'uploads/images';
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
@@ -30,48 +14,74 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    cb(null, 'image-' + uniqueSuffix + path.extname(file.originalname));
   }
 });
 
-// File filter
-const fileFilter = (req, file, cb) => {
-  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+// Image upload middleware
+export const uploadImage = multer({
+  storage: imageStorage,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'), false);
+    }
+  }
+});
+
+// Local storage for Excel files
+const excelStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = 'uploads/excel';
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'excel-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+// File filter for Excel uploads
+const excelFileFilter = (req, file, cb) => {
+  const allowedTypes = [
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+    'application/vnd.ms-excel', // .xls
+    'application/octet-stream' // Some systems send this for Excel files
+  ];
   
-  if (allowedTypes.includes(file.mimetype)) {
+  const allowedExtensions = ['.xlsx', '.xls'];
+  const fileExtension = path.extname(file.originalname).toLowerCase();
+  
+  if (allowedTypes.includes(file.mimetype) || allowedExtensions.includes(fileExtension)) {
     cb(null, true);
   } else {
-    cb(new AppError('Invalid file type. Only JPG, PNG, and WebP are allowed.', 400, 'INVALID_FILE_TYPE'), false);
+    cb(new Error('Only Excel files (.xlsx, .xls) are allowed'), false);
   }
 };
 
-// Configure multer
-const upload = multer({
-  storage: storage,
-  fileFilter: fileFilter,
+// Excel upload middleware
+export const uploadExcel = multer({
+  storage: excelStorage,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB
+    fileSize: 10 * 1024 * 1024 // 10MB
   },
+  fileFilter: excelFileFilter
 });
 
-// Error handling middleware for multer
-export const handleUploadError = (error, req, res, next) => {
-  if (error instanceof multer.MulterError) {
-    if (error.code === 'LIMIT_FILE_SIZE') {
-      return next(new AppError('File size too large. Maximum size is 10MB.', 400, 'FILE_TOO_LARGE'));
+// Clean up uploaded Excel files
+export const cleanupExcelFile = (filePath) => {
+  try {
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
     }
-    if (error.code === 'LIMIT_FILE_COUNT') {
-      return next(new AppError('Too many files. Only one file is allowed.', 400, 'TOO_MANY_FILES'));
-    }
-    return next(new AppError('File upload error: ' + error.message, 400, 'UPLOAD_ERROR'));
+  } catch (error) {
+    console.error('Error cleaning up Excel file:', error);
   }
-  
-  if (error instanceof AppError) {
-    return next(error);
-  }
-  
-  return next(new AppError('File upload failed: ' + error.message, 500, 'UPLOAD_FAILED'));
 };
-
-export { configureCloudinary };
-export default upload;

@@ -16,12 +16,13 @@ import cartRoutes from './routes/cart.js';
 import contactRoutes from './routes/contact.js';
 import adminRoutes from './routes/admin.js';
 import uploadRoutes from './routes/upload.js';
+import excelRoutes from './routes/excel.js';
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 const API_PREFIX = process.env.API_PREFIX || '/api';
 
 // Test database connection
@@ -69,6 +70,9 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
+// Upload routes (must come BEFORE body parsing middleware)
+app.use(`${API_PREFIX}/upload`, uploadRoutes);
+
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -95,7 +99,7 @@ app.use(`${API_PREFIX}/products`, productRoutes);
 app.use(`${API_PREFIX}/cart`, cartRoutes);
 app.use(`${API_PREFIX}/contact`, contactRoutes);
 app.use(`${API_PREFIX}/admin`, adminRoutes);
-app.use(`${API_PREFIX}/upload`, uploadRoutes);
+app.use(`${API_PREFIX}/excel`, excelRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {

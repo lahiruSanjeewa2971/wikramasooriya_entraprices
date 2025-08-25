@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from './ui/form';
 import ImageUpload from './ImageUpload';
+import ImageUploadService from '../services/imageUploadService';
+import { toast } from 'react-toastify';
 
 // Zod validation schema
 const productSchema = z.object({
@@ -22,7 +24,8 @@ const productSchema = z.object({
     .max(50, 'SKU cannot exceed 50 characters'),
   description: z.string().optional(),
   short_description: z.string().max(500, 'Short description cannot exceed 500 characters').optional(),
-  image_url: z.string().url('Please enter a valid URL').or(z.literal('')).optional(),
+  image_url: z.string().optional().or(z.literal('')),
+  image_public_id: z.string().optional().or(z.literal('')),
   price: z.coerce.number()
     .positive('Price must be a positive number')
     .min(0.01, 'Price must be at least $0.01'),
@@ -39,6 +42,8 @@ const productSchema = z.object({
 
 export default function ProductModal({ product, categories, onClose, onSubmit, isLoading }) {
   const [productImage, setProductImage] = useState(product?.image_url || null);
+  const [originalImage, setOriginalImage] = useState(null); // Track original image state
+  const [pendingImageDeletion, setPendingImageDeletion] = useState(false); // Track if image is marked for deletion
 
   const form = useForm({
     resolver: zodResolver(productSchema),
@@ -48,6 +53,7 @@ export default function ProductModal({ product, categories, onClose, onSubmit, i
       description: '',
       short_description: '',
       image_url: '',
+      image_public_id: '',
       price: '',
       stock_qty: '',
       category_id: undefined,
@@ -64,7 +70,7 @@ export default function ProductModal({ product, categories, onClose, onSubmit, i
     if (product) {
       const imageData = product.image_url ? {
         url: product.image_url,
-        public_id: `product_${product.id}`,
+        public_id: product.image_public_id || `product_${product.id}`, // Use actual public_id if available
         secure_url: product.image_url,
         original_name: 'product_image.jpg',
         format: 'JPG',
@@ -74,12 +80,16 @@ export default function ProductModal({ product, categories, onClose, onSubmit, i
       } : null;
       
       setProductImage(imageData);
+      setOriginalImage(imageData); // Store original image state
+      setPendingImageDeletion(false); // Reset deletion flag
+      
       form.reset({
         name: product.name || '',
         sku: product.sku || '',
         description: product.description || '',
         short_description: product.short_description || '',
         image_url: product.image_url || '',
+        image_public_id: product.image_public_id || '',
         price: product.price || '',
         stock_qty: product.stock_qty || '',
         category_id: product.category_id || undefined,
@@ -91,6 +101,9 @@ export default function ProductModal({ product, categories, onClose, onSubmit, i
       });
     } else {
       setProductImage(null);
+      setOriginalImage(null);
+      setPendingImageDeletion(false);
+      
       form.reset({
         name: '',
         sku: '',
@@ -98,10 +111,6 @@ export default function ProductModal({ product, categories, onClose, onSubmit, i
         short_description: '',
         image_url: '',
         image_public_id: '',
-        image_format: '',
-        image_size: undefined,
-        image_width: undefined,
-        image_height: undefined,
         price: '',
         stock_qty: '',
         category_id: undefined,
@@ -116,26 +125,114 @@ export default function ProductModal({ product, categories, onClose, onSubmit, i
 
   // Handle image changes
   const handleImageChange = (imageData) => {
+    console.log('🔍 ProductModal - handleImageChange received:', imageData);
+    console.log('🔍 ProductModal - image_public_id:', imageData?.public_id);
+    
     setProductImage(imageData);
+    setPendingImageDeletion(false); // Clear pending deletion when new image is uploaded
     form.setValue('image_url', imageData?.url || '');
+    form.setValue('image_public_id', imageData?.public_id || '');
+    
+    console.log('🔍 ProductModal - Form values after setting:', {
+      image_url: form.getValues('image_url'),
+      image_public_id: form.getValues('image_public_id')
+    });
   };
 
   const handleImageRemove = () => {
-    setProductImage(null);
-    form.setValue('image_url', '');
+    // If there's a current image, mark it for deletion
+    if (productImage?.public_id) {
+      setProductImage(null);
+      setPendingImageDeletion(true);
+      form.setValue('image_url', '');
+      form.setValue('image_public_id', '');
+      toast.success('Image marked for removal. Click Save to confirm deletion.');
+    }
+    // If there's no current image but we have an original image, mark it for deletion
+    else if (originalImage?.public_id && !pendingImageDeletion) {
+      setPendingImageDeletion(true);
+      form.setValue('image_url', '');
+      form.setValue('image_public_id', '');
+      toast.success('Image marked for removal. Click Save to confirm deletion.');
+    }
   };
 
-  const handleSubmit = (data) => {
-    // Include the current image data in the submission
-    const submitData = {
-      ...data,
-      image_url: productImage?.url || data.image_url
-    };
+  const handleImageRestore = () => {
+    if (originalImage) {
+      setProductImage(originalImage);
+      setPendingImageDeletion(false);
+      form.setValue('image_url', originalImage.url || '');
+      form.setValue('image_public_id', originalImage.public_id || '');
+      toast.info('Image restored.');
+    }
+  };
 
-    if (product) {
-      onSubmit(product.id, submitData);
-    } else {
-      onSubmit(submitData);
+  const handleCancel = () => {
+    // Revert image changes if any
+    if (pendingImageDeletion && originalImage) {
+      setProductImage(originalImage);
+      setPendingImageDeletion(false);
+      form.setValue('image_url', originalImage.url || '');
+      form.setValue('image_public_id', originalImage.public_id || '');
+      toast.info('Image changes reverted.');
+    }
+    
+    // Close modal
+    onClose();
+  };
+
+  const handleSubmit = async (data) => {
+    console.log('🔍 ProductModal - Form data before processing:', data);
+    console.log('🔍 ProductModal - Current productImage:', productImage);
+    console.log('🔍 ProductModal - Form values for image fields:', {
+      image_url: form.getValues('image_url'),
+      image_public_id: form.getValues('image_public_id')
+    });
+    console.log('🔍 ProductModal - Pending image deletion:', pendingImageDeletion);
+    console.log('🔍 ProductModal - Original image:', originalImage);
+    
+    try {
+      // If there's a pending image deletion, call the Cloudinary API first
+      if (pendingImageDeletion && originalImage?.public_id) {
+        console.log('🔍 ProductModal - Deleting image from Cloudinary:', originalImage.public_id);
+        await ImageUploadService.deleteImage(originalImage.public_id);
+        console.log('🔍 ProductModal - Image deleted from Cloudinary successfully');
+      }
+      
+      // Include the current image data in the submission
+      // If productImage is null (image deleted), explicitly set image fields to empty
+      const submitData = {
+        ...data,
+        image_url: productImage ? productImage.url : '',
+        image_public_id: productImage ? productImage.public_id : ''
+      };
+      
+      console.log('🔍 ProductModal - Final submit data:', submitData);
+      console.log('🔍 ProductModal - image_public_id in submit:', submitData.image_public_id);
+      console.log('🔍 ProductModal - image_url in submit:', submitData.image_url);
+
+      if (product) {
+        await onSubmit(product.id, submitData);
+      } else {
+        await onSubmit(submitData);
+      }
+      
+      // Clear pending deletion flag after successful save
+      setPendingImageDeletion(false);
+      
+    } catch (error) {
+      console.error('🔍 ProductModal - Error during submission:', error);
+      
+      // If there was an error and we had pending deletion, revert the image
+      if (pendingImageDeletion && originalImage) {
+        setProductImage(originalImage);
+        setPendingImageDeletion(false);
+        form.setValue('image_url', originalImage.url || '');
+        form.setValue('image_public_id', originalImage.public_id || '');
+        toast.error('Failed to save product. Image changes reverted.');
+      } else {
+        toast.error('Failed to save product.');
+      }
     }
   };
 
@@ -204,9 +301,9 @@ export default function ProductModal({ product, categories, onClose, onSubmit, i
                       <FormControl>
                         <Textarea
                           placeholder="Product description"
-                          rows={3}
                           {...field}
                           className="w-full"
+                          rows={3}
                         />
                       </FormControl>
                       <FormMessage />
@@ -235,24 +332,21 @@ export default function ProductModal({ product, categories, onClose, onSubmit, i
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="image_url"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Product Image
-                      </FormLabel>
-                      <ImageUpload
-                        currentImage={productImage}
-                        onImageChange={handleImageChange}
-                        onImageRemove={handleImageRemove}
-                        disabled={isLoading}
-                      />
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {/* Image Upload Section */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Product Image
+                  </Label>
+                  <ImageUpload
+                    currentImage={productImage}
+                    onImageChange={handleImageChange}
+                    onImageRemove={handleImageRemove}
+                    onImageRestore={handleImageRestore}
+                    disabled={isLoading}
+                    className="w-full"
+                    isMarkedForDeletion={pendingImageDeletion}
+                  />
+                </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
@@ -416,7 +510,7 @@ export default function ProductModal({ product, categories, onClose, onSubmit, i
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={onClose}
+                    onClick={handleCancel}
                     disabled={isLoading}
                   >
                     Cancel

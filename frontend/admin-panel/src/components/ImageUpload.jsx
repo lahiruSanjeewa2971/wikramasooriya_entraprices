@@ -1,15 +1,17 @@
 import { useState, useCallback } from 'react';
-import { Upload, X, Image as ImageIcon, Trash2 } from 'lucide-react';
+import { Upload, X, Image as ImageIcon, Trash2, RotateCcw } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 import ImageUploadService from '../services/imageUploadService';
 
 export default function ImageUpload({ 
-  currentImage = null, 
+  currentImage, 
   onImageChange, 
-  onImageRemove,
-  disabled = false,
-  className = ""
+  onImageRemove, 
+  onImageRestore, // New prop for restoring image
+  disabled = false, 
+  className = '',
+  isMarkedForDeletion = false // New prop to show deletion state
 }) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
@@ -42,6 +44,8 @@ export default function ImageUpload({
   const handleFileSelect = (file) => {
     if (!file) return;
 
+    console.log('File selected:', file.name, file.size, file.type); // Debug log
+
     // Reset any previous errors
     setUploadError(null);
 
@@ -71,6 +75,8 @@ export default function ImageUpload({
 
   // Real image upload function
   const uploadImage = async (file) => {
+    console.log('Starting upload for file:', file.name); // Debug log
+    
     setIsUploading(true);
     setUploadProgress(0);
     setUploadError(null);
@@ -83,9 +89,22 @@ export default function ImageUpload({
         (progress) => setUploadProgress(progress)
       );
 
+      console.log('Upload successful:', uploadedImageData); // Debug log
+      console.log('🔍 Image data structure:', {
+        url: uploadedImageData?.url,
+        public_id: uploadedImageData?.public_id,
+        secure_url: uploadedImageData?.secure_url,
+        original_name: uploadedImageData?.original_name,
+        format: uploadedImageData?.format,
+        size: uploadedImageData?.size,
+        width: uploadedImageData?.width,
+        height: uploadedImageData?.height
+      });
+
       // Clear preview and update parent
       setPreviewImage(null);
       if (onImageChange) {
+        console.log('🔍 Calling onImageChange with:', uploadedImageData);
         onImageChange(uploadedImageData);
       }
 
@@ -128,27 +147,55 @@ export default function ImageUpload({
     <div className={`space-y-4 ${className}`}>
       {/* Current Image Display */}
       {currentImage && (
-        <Card className="border-2 border-dashed border-gray-300 dark:border-gray-600">
+        <Card className={`border-2 border-dashed transition-colors duration-200 ${
+          isMarkedForDeletion 
+            ? 'border-red-300 bg-red-50 dark:bg-red-900/20' 
+            : 'border-gray-300 dark:border-gray-600'
+        }`}>
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-3">
               <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Current Product Image
+                {isMarkedForDeletion ? 'Image Marked for Removal' : 'Current Product Image'}
               </h4>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleRemoveImage}
-                disabled={disabled || isUploading}
-                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              <div className="flex space-x-2">
+                {isMarkedForDeletion && onImageRestore && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={onImageRestore}
+                    disabled={disabled || isUploading}
+                    className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/20"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={onImageRemove}
+                  disabled={disabled || isUploading}
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
+            {isMarkedForDeletion && (
+              <div className="mb-3 p-2 bg-red-100 dark:bg-red-800/30 rounded-lg">
+                <p className="text-xs text-red-700 dark:text-red-300">
+                  ⚠️ This image will be permanently deleted when you save the product.
+                </p>
+              </div>
+            )}
             <div className="relative">
               <img
                 src={currentImage.url || currentImage}
                 alt="Product"
-                className="w-full h-32 object-cover rounded-lg"
+                className={`w-full h-32 object-cover rounded-lg ${
+                  isMarkedForDeletion ? 'opacity-50' : ''
+                }`}
               />
               <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-10 transition-all duration-200 rounded-lg" />
             </div>
@@ -221,6 +268,7 @@ export default function ImageUpload({
               {!isUploading && (
                 <div className="mt-6">
                   <Button
+                    type="button"
                     onClick={triggerFileInput}
                     disabled={disabled}
                     className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -261,6 +309,7 @@ export default function ImageUpload({
                 Image Preview
               </h4>
               <Button
+                type="button"
                 variant="ghost"
                 size="sm"
                 onClick={() => setPreviewImage(null)}

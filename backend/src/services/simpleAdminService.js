@@ -147,7 +147,7 @@ export class simpleAdminService {
     try {
       // Clean and validate data
       const {
-        name, sku, description, short_description, image_url,
+        name, sku, description, short_description, image_url, image_public_id,
         price, stock_qty, category_id, featured, new_arrival,
         weight, dimensions, is_active
       } = productData;
@@ -157,6 +157,13 @@ export class simpleAdminService {
       
       // Clean image URL (remove HTML tags)
       const cleanImageUrl = image_url ? image_url.replace(/<[^>]*>/g, '') : null;
+      
+      // Clean image public ID (remove HTML tags)
+      const cleanImagePublicId = image_public_id ? image_public_id.replace(/<[^>]*>/g, '') : null;
+      
+      // Convert empty strings to NULL for image fields
+      const finalImageUrl = cleanImageUrl === '' ? null : cleanImageUrl;
+      const finalImagePublicId = cleanImagePublicId === '' ? null : cleanImagePublicId;
       
       // Clean and validate price
       const cleanPrice = parseFloat(price);
@@ -193,16 +200,16 @@ export class simpleAdminService {
 
       const insertQuery = `
         INSERT INTO products (
-          sku, name, description, short_description, image_url,
+          sku, name, description, short_description, image_url, image_public_id,
           price, stock_qty, category_id, featured, new_arrival,
           weight, dimensions, is_active, created_at, updated_at
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         RETURNING *
       `;
 
       const values = [
-        sku, name, description, cleanShortDescription, cleanImageUrl,
+        sku, name, description, cleanShortDescription, finalImageUrl, finalImagePublicId,
         cleanPrice, cleanStockQty, cleanCategoryId, featured, new_arrival,
         cleanWeight, cleanDimensions, is_active
       ];
@@ -227,7 +234,7 @@ export class simpleAdminService {
     try {
       // Clean and validate data
       const {
-        name, sku, description, short_description, image_url,
+        name, sku, description, short_description, image_url, image_public_id,
         price, stock_qty, category_id, featured, new_arrival,
         weight, dimensions, is_active
       } = productData;
@@ -237,6 +244,13 @@ export class simpleAdminService {
       
       // Clean image URL (remove HTML tags)
       const cleanImageUrl = image_url ? image_url.replace(/<[^>]*>/g, '') : null;
+      
+      // Clean image public ID (remove HTML tags)
+      const cleanImagePublicId = image_public_id ? image_public_id.replace(/<[^>]*>/g, '') : null;
+      
+      // Convert empty strings to NULL for image fields (to clear them)
+      const finalImageUrl = cleanImageUrl === '' ? null : cleanImageUrl;
+      const finalImagePublicId = cleanImagePublicId === '' ? null : cleanImagePublicId;
       
       // Clean and validate price
       const cleanPrice = parseFloat(price);
@@ -280,27 +294,37 @@ export class simpleAdminService {
           sku = COALESCE($2, sku),
           description = COALESCE($3, description),
           short_description = COALESCE($4, short_description),
-          image_url = COALESCE($5, image_url),
-          price = COALESCE($6, price),
-          stock_qty = COALESCE($7, stock_qty),
-          category_id = COALESCE($8, category_id),
-          featured = COALESCE($9, featured),
-          new_arrival = COALESCE($10, new_arrival),
-          weight = COALESCE($11, weight),
-          dimensions = COALESCE($12, dimensions),
-          is_active = COALESCE($13, is_active),
+          image_url = $5,
+          image_public_id = $6,
+          price = COALESCE($7, price),
+          stock_qty = COALESCE($8, stock_qty),
+          category_id = COALESCE($9, category_id),
+          featured = COALESCE($10, featured),
+          new_arrival = COALESCE($11, new_arrival),
+          weight = COALESCE($12, weight),
+          dimensions = COALESCE($13, dimensions),
+          is_active = COALESCE($14, is_active),
           updated_at = CURRENT_TIMESTAMP
-        WHERE id = $14
+        WHERE id = $15
         RETURNING *
       `;
 
       const values = [
-        name, sku, description, cleanShortDescription, cleanImageUrl,
+        name, sku, description, cleanShortDescription, finalImageUrl, finalImagePublicId,
         cleanPrice, cleanStockQty, cleanCategoryId, featured, new_arrival,
         cleanWeight, cleanDimensions, is_active, productId
       ];
 
+      // Debug: Log final values being updated
+      console.log('🔍 updateProduct - Final image values:', {
+        image_url: finalImageUrl,
+        image_public_id: finalImagePublicId
+      });
+
       const result = await query(updateQuery, values);
+      
+      // Debug: Log the result from database update
+      console.log('🔍 updateProduct - Database update result:', result.rows[0]);
       
       if (result.rows.length === 0) {
         throw new AppError('Product not found', 404, 'PRODUCT_NOT_FOUND');
@@ -1033,6 +1057,14 @@ export class simpleAdminService {
               const categoryResult = await client.query('SELECT id FROM categories WHERE name = $1', [category_name]);
               if (categoryResult.rows.length > 0) {
                 categoryId = categoryResult.rows[0].id;
+              } else {
+                // Create new category if it doesn't exist
+                const newCategoryResult = await client.query(`
+                  INSERT INTO categories (name, description) 
+                  VALUES ($1, $2) 
+                  RETURNING id
+                `, [category_name, `Category for ${name}`]);
+                categoryId = newCategoryResult.rows[0].id;
               }
             }
 
@@ -1095,5 +1127,152 @@ export class simpleAdminService {
     } finally {
       client.release();
     }
+  }
+
+  /**
+   * Process Excel upload for products with weighted average pricing
+   */
+  static async processExcelUpload(excelData, adminUserId) {
+    const client = await getClient();
+    try {
+      await client.query('BEGIN');
+
+      const results = {
+        processed: 0,
+        created: 0,
+        updated: 0,
+        errors: [],
+        total: excelData.length
+      };
+
+      for (const row of excelData) {
+        try {
+          // Validate required fields
+          if (!row.sku || !row.name || !row.price || !row.stock_qty || !row.category_name) {
+            results.errors.push({
+              row: row._rowNumber || 'Unknown',
+              sku: row.sku || 'N/A',
+              error: 'Missing required fields: SKU, Product Name, Price, Stock Quantity, Category Name'
+            });
+            continue;
+          }
+
+          const { sku, name, price, stock_qty, category_name } = row;
+
+          // Get or create category
+          let categoryId;
+          try {
+            categoryId = await this.getOrCreateCategoryFromClient(client, category_name);
+          } catch (error) {
+            results.errors.push({
+              row: row._rowNumber || 'Unknown',
+              sku: sku,
+              error: `Category error: ${error.message}`
+            });
+            continue;
+          }
+
+          // Check if product exists
+          const existingProduct = await client.query(
+            'SELECT id, price, stock_qty FROM products WHERE sku = $1',
+            [sku]
+          );
+
+          if (existingProduct.rows.length > 0) {
+            // Update existing product with weighted average pricing
+            await this.updateExistingProductFromExcel(client, row, existingProduct.rows[0], categoryId);
+            results.updated++;
+          } else {
+            // Create new product
+            await this.createNewProductFromExcel(client, row, categoryId);
+            results.created++;
+          }
+
+          results.processed++;
+        } catch (error) {
+          results.errors.push({
+            row: row._rowNumber || 'Unknown',
+            sku: row.sku || 'N/A',
+            error: error.message
+          });
+        }
+      }
+
+      await client.query('COMMIT');
+      return results;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      logger.error('Error in processExcelUpload:', error);
+      throw new Error('Failed to process Excel upload: ' + error.message);
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Get or create category using database client
+   */
+  static async getOrCreateCategoryFromClient(client, categoryName) {
+    // Check if category exists
+    let result = await client.query(
+      'SELECT id FROM categories WHERE name = $1',
+      [categoryName]
+    );
+
+    if (result.rows.length === 0) {
+      // Create new category
+      result = await client.query(
+        'INSERT INTO categories (name, description, created_at, updated_at) VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id',
+        [categoryName, `Category for ${categoryName}`]
+      );
+    }
+
+    return result.rows[0].id;
+  }
+
+  /**
+   * Update existing product from Excel with weighted average pricing
+   */
+  static async updateExistingProductFromExcel(client, row, existingProduct, categoryId) {
+    const { price: newPrice, stock_qty: newQty } = row;
+    const { price: existingPrice, stock_qty: existingQty } = existingProduct;
+
+    // Calculate weighted average price
+    const totalQty = existingQty + newQty;
+    const totalValue = (existingQty * existingPrice) + (newQty * newPrice);
+    const weightedAveragePrice = Math.round((totalValue / totalQty) * 100) / 100;
+
+    // Update product
+    await client.query(`
+      UPDATE products 
+      SET 
+        stock_qty = $1,
+        price = $2,
+        category_id = $3,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = $4
+    `, [totalQty, weightedAveragePrice, categoryId, existingProduct.id]);
+  }
+
+  /**
+   * Create new product from Excel
+   */
+  static async createNewProductFromExcel(client, row, categoryId) {
+    const {
+      sku, name, description, short_description, price, stock_qty,
+      featured, new_arrival, weight, dimensions, is_active
+    } = row;
+
+    await client.query(`
+      INSERT INTO products (
+        sku, name, description, short_description, price, stock_qty,
+        category_id, featured, new_arrival, weight, dimensions, is_active,
+        created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    `, [
+      sku, name, description || null, short_description || null, price, stock_qty,
+      categoryId, featured || false, new_arrival || false, weight || null, 
+      dimensions || null, is_active !== undefined ? is_active : true
+    ]);
   }
 }
