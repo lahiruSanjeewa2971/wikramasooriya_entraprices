@@ -72,6 +72,7 @@ class AdminService {
   // Contact Messages Management
   async getContacts(params = {}) {
     const response = await apiClient.get('/admin/contacts', { params });
+    console.log('Contacts Response:', response.data);
     return response.data;
   }
 

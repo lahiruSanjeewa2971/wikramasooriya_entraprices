@@ -12,6 +12,7 @@ export default function Contacts() {
   });
 
   const contacts = contactsData?.data?.contacts || [];
+  console.log('Contacts:', contacts);
 
   return (
     <div className="space-y-6">
@@ -68,7 +69,7 @@ export default function Contacts() {
                       {contact.email}
                     </p>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                      Subject: {contact.subject}
+                      Subject: {contact.title}
                     </p>
                     <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
                       {contact.message}

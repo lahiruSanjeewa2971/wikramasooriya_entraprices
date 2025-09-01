@@ -10,6 +10,8 @@ import heroPhotoMobile from "@/assets/pages/hero-photo-mobile.jpg";
 import bearing from "@/assets/pages/product-bearing.jpg";
 import hose from "@/assets/pages/product-hose.jpg";
 import hexnuts from "@/assets/pages/product-hexnuts.jpg";
+import steam_couplers from "@/assets/images/steam_couplers.jpg";
+import polishing_wheels from "@/assets/images/polishing_wheels.jpg";
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 
@@ -21,17 +23,17 @@ const Index = () => {
   const productCategories = {
     'hydraulic-hose': {
       name: 'Hydraulic Hose',
-      image: heroTechnical,
+      image: hose,
       description: 'High-performance hydraulic hoses designed for industrial applications. Our hydraulic hoses feature reinforced construction with multiple layers of high-tensile steel wire braid or spiral reinforcement, ensuring maximum durability under extreme pressure conditions. Perfect for construction equipment, agricultural machinery, and industrial hydraulic systems.'
     },
     'steam-couplers': {
       name: 'Steam Couplers',
-      image: heroTechnical,
+      image: steam_couplers,
       description: 'Premium steam couplers engineered for high-temperature and high-pressure steam applications. These precision-engineered couplers feature advanced sealing technology with heat-resistant materials and corrosion-resistant coatings. Ideal for power plants, steam systems, and industrial processes requiring reliable steam connections.'
     },
     'polishing-wheels': {
       name: 'Polishing Wheels',
-      image: heroTechnical,
+      image: polishing_wheels,
       description: 'Professional-grade polishing wheels for metal finishing and surface preparation. Our polishing wheels come in various grit sizes and materials, from aggressive cutting wheels to fine finishing wheels. Perfect for automotive refinishing, metal fabrication, and industrial surface finishing applications.'
     }
   };

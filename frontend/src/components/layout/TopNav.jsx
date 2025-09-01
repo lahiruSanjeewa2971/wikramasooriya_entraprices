@@ -84,7 +84,12 @@ const TopNav = () => {
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-lg">W</span>
             </div>
-            <span className="font-bold text-xl text-gray-900">Wikramasooriya</span>
+            <span className="font-bold text-xl text-gray-900 hidden sm:block">
+              Wikramasooriya Enterprises
+            </span>
+            <span className="font-bold text-lg text-gray-900 sm:hidden">
+              WE
+            </span>
           </Link>
 
           {/* Navigation Links */}
@@ -129,22 +134,32 @@ const TopNav = () => {
                   className="flex items-center space-x-2"
                 >
                   <LogOut className="w-4 h-4" />
-                  <span>{isLoading ? "Logging out..." : "Logout"}</span>
+                  <span className="hidden sm:inline">{isLoading ? "Logging out..." : "Logout"}</span>
                 </Button>
               </div>
             ) : (
               <div className="flex items-center space-x-3">
-                <Link to="/login">
+                {/* Mobile: Single Account Button */}
+                <Link to="/login" className="md:hidden">
                   <Button variant="outline" size="sm">
-                    <User className="w-4 h-4 mr-2" />
-                    Login
+                    <User className="w-4 h-4" />
                   </Button>
                 </Link>
-                <Link to="/register">
-                  <Button size="sm">
-                    Sign Up
-                  </Button>
-                </Link>
+                
+                {/* Desktop: Separate Login and Sign Up Buttons */}
+                <div className="hidden md:flex items-center space-x-3">
+                  <Link to="/login">
+                    <Button variant="outline" size="sm">
+                      <User className="w-4 h-4 mr-2" />
+                      Login
+                    </Button>
+                  </Link>
+                  <Link to="/register">
+                    <Button size="sm">
+                      Sign Up
+                    </Button>
+                  </Link>
+                </div>
               </div>
             )}
           </div>

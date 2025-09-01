@@ -190,20 +190,22 @@ const Products = () => {
   };
 
   const handleCategoryChange = async (categoryId) => {
-    setSelectedCategory(categoryId);
+    // Convert empty string to undefined for "All Categories" selection
+    const actualCategoryId = categoryId === "" ? undefined : categoryId;
+    setSelectedCategory(categoryId); // Keep the UI state as empty string for the select element
     
     if (isSearchMode) {
       // If in search mode, re-apply search with new category filter
       try {
         const response = await productService.searchProducts(searchQuery);
         if (response.success && response.data.products) {
-          if (categoryId && categoryId !== "") {
+          if (actualCategoryId) {
             // Filter search results by new category
             const filteredResults = response.data.products.filter(product => 
-              product.category_id === parseInt(categoryId)
+              product.category_id === parseInt(actualCategoryId)
             );
             setProducts(filteredResults);
-            toastService.show(`Showing ${filteredResults.length} products in "${categories.find(c => c.id === parseInt(categoryId))?.name}" category for "${searchQuery}"`, 'info');
+            toastService.show(`Showing ${filteredResults.length} products in "${categories.find(c => c.id === parseInt(actualCategoryId))?.name}" category for "${searchQuery}"`, 'info');
           } else {
             // Show all search results when no category is selected
             setProducts(response.data.products);
@@ -219,7 +221,7 @@ const Products = () => {
       try {
         setLoading(true);
         const filters = {
-          category: categoryId || undefined,
+          category: actualCategoryId,
           sortBy,
           sortOrder
         };
@@ -228,8 +230,8 @@ const Products = () => {
         
         if (response.success && response.data.products) {
           setProducts(response.data.products);
-          if (categoryId && categoryId !== "") {
-            const categoryName = categories.find(c => c.id === parseInt(categoryId))?.name;
+          if (actualCategoryId) {
+            const categoryName = categories.find(c => c.id === parseInt(actualCategoryId))?.name;
             toastService.show(`Showing ${response.data.products.length} products in ${categoryName} category`, 'info');
           } else {
             toastService.show(`Showing all ${response.data.products.length} products`, 'info');
