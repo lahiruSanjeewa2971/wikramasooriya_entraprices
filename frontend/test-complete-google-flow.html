@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google OAuth Flow Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        pre { background-color: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Google OAuth Complete Flow Test</h1>
+    
+    <div class="test-section info">
+        <h3>📋 Test Instructions:</h3>
+        <ol>
+            <li>Click "Test Google Login Flow" button</li>
+            <li>Check browser console for debug logs</li>
+            <li>Verify localStorage contains user data and tokens</li>
+            <li>Check if TopNav updates with user info</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h3>🔧 Test Controls:</h3>
+        <button onclick="testGoogleLoginFlow()">Test Google Login Flow</button>
+        <button onclick="checkLocalStorage()">Check localStorage</button>
+        <button onclick="simulateAuthEvent()">Simulate Auth Event</button>
+        <button onclick="clearStorage()">Clear Storage</button>
+    </div>
+
+    <div id="results" class="test-section">
+        <h3>📊 Test Results:</h3>
+        <div id="output">Click a test button to see results...</div>
+    </div>
+
+    <script>
+        // Mock Google OAuth response based on your real data
+        const mockGoogleResponse = {
+            success: true,
+            user: {
+                id: 123,
+                name: "Lahiru",
+                email: "thousandsunny2971@gmail.com",
+                google_id: "109328954571144236752",
+                avatar_url: "https://lh3.googleusercontent.com/a/ACg8ocINjM7iaY4UbaPGYTpqgCsvzbcP9WOxqQUqqa34Saxq58hFGEk=s96-c",
+                provider: "google",
+                email_verified: true,
+                role: "user",
+                is_active: true
+            },
+            tokens: {
+                accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEyMywiZXhwIjoxNzIzNTQ4NDAwfQ.test",
+                refreshToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEyMywiZXhwIjoxNzIzNTQ4NDAwfQ.refresh"
+            }
+        };
+
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            output.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+        }
+
+        function testGoogleLoginFlow() {
+            log('🧪 Starting Google Login Flow Test...', 'info');
+            
+            try {
+                // Simulate the auth service googleLogin method
+                log('📤 Storing tokens and user data in localStorage...', 'info');
+                localStorage.setItem('accessToken', mockGoogleResponse.tokens.accessToken);
+                localStorage.setItem('refreshToken', mockGoogleResponse.tokens.refreshToken);
+                localStorage.setItem('user', JSON.stringify(mockGoogleResponse.user));
+                
+                log('✅ Data stored successfully!', 'success');
+                
+                // Dispatch login event
+                log('📡 Dispatching auth:login event...', 'info');
+                const loginEvent = new CustomEvent('auth:login', { 
+                    detail: { user: mockGoogleResponse.user } 
+                });
+                window.dispatchEvent(loginEvent);
+                
+                log('✅ Auth event dispatched!', 'success');
+                
+                // Check if TopNav would receive the event
+                log('🔍 Checking if TopNav would receive the event...', 'info');
+                log('User data: ' + JSON.stringify(mockGoogleResponse.user, null, 2), 'info');
+                
+            } catch (error) {
+                log('❌ Test failed: ' + error.message, 'error');
+            }
+        }
+
+        function checkLocalStorage() {
+            log('🔍 Checking localStorage contents...', 'info');
+            
+            const accessToken = localStorage.getItem('accessToken');
+            const refreshToken = localStorage.getItem('refreshToken');
+            const user = localStorage.getItem('user');
+            
+            if (accessToken) {
+                log('✅ accessToken found: ' + accessToken.substring(0, 20) + '...', 'success');
+            } else {
+                log('❌ accessToken not found', 'error');
+            }
+            
+            if (refreshToken) {
+                log('✅ refreshToken found: ' + refreshToken.substring(0, 20) + '...', 'success');
+            } else {
+                log('❌ refreshToken not found', 'error');
+            }
+            
+            if (user) {
+                const userData = JSON.parse(user);
+                log('✅ user data found:', 'success');
+                log('<pre>' + JSON.stringify(userData, null, 2) + '</pre>', 'info');
+            } else {
+                log('❌ user data not found', 'error');
+            }
+        }
+
+        function simulateAuthEvent() {
+            log('📡 Simulating auth:login event...', 'info');
+            
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            if (user.id) {
+                const loginEvent = new CustomEvent('auth:login', { 
+                    detail: { user: user } 
+                });
+                window.dispatchEvent(loginEvent);
+                log('✅ Auth event dispatched with user: ' + user.name, 'success');
+            } else {
+                log('❌ No user data found in localStorage', 'error');
+            }
+        }
+
+        function clearStorage() {
+            log('🗑️ Clearing localStorage...', 'info');
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('user');
+            log('✅ localStorage cleared!', 'success');
+        }
+
+        // Listen for auth events to test if TopNav would receive them
+        window.addEventListener('auth:login', function(event) {
+            log('🎉 Received auth:login event! User: ' + event.detail.user.name, 'success');
+        });
+
+        window.addEventListener('auth:logout', function(event) {
+            log('👋 Received auth:logout event!', 'info');
+        });
+
+        // Initial check
+        log('🚀 Google OAuth Test Page Loaded', 'info');
+        log('Click "Test Google Login Flow" to start testing', 'info');
+    </script>
+</body>
+</html>

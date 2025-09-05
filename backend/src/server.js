@@ -4,10 +4,12 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
+import session from 'express-session';
 
 import { errorHandler } from './middleware/errorHandler.js';
 import { logger } from './utils/logger.js';
 import { testConnection } from './db/simple-connection.js';
+import passport, { configureGoogleStrategy } from './middleware/googleAuth.js';
 
 // Import routes
 import authRoutes from './routes/auth.js';
@@ -17,6 +19,7 @@ import contactRoutes from './routes/contact.js';
 import adminRoutes from './routes/admin.js';
 import uploadRoutes from './routes/upload.js';
 import excelRoutes from './routes/excel.js';
+import googleAuthRoutes from './routes/googleAuth.js';
 
 // Load environment variables
 dotenv.config();
@@ -73,6 +76,24 @@ app.use(limiter);
 // Upload routes (must come BEFORE body parsing middleware)
 app.use(`${API_PREFIX}/upload`, uploadRoutes);
 
+// Session middleware (required for Passport)
+app.use(session({
+  secret: process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
+// Configure Google OAuth strategy
+configureGoogleStrategy();
+
+// Initialize Passport
+app.use(passport.initialize());
+app.use(passport.session());
+
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -95,6 +116,7 @@ app.get('/health', (req, res) => {
 
 // API routes
 app.use(`${API_PREFIX}/auth`, authRoutes);
+app.use(`${API_PREFIX}/auth`, googleAuthRoutes); // Google OAuth routes
 app.use(`${API_PREFIX}/products`, productRoutes);
 app.use(`${API_PREFIX}/cart`, cartRoutes);
 app.use(`${API_PREFIX}/contact`, contactRoutes);
