@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
+import { motion, AnimatePresence } from "framer-motion";
 import { Filter, ShoppingCart, Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,6 +24,184 @@ const Products = () => {
   const [isSearchMode, setIsSearchMode] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [addingToCart, setAddingToCart] = useState({});
+  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
+  const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
+
+  // Animation variants
+  const pageVariants = {
+    initial: { opacity: 0 },
+    animate: { 
+      opacity: 1,
+      transition: { duration: 0.5, ease: "easeOut" }
+    }
+  };
+
+  const headerVariants = {
+    initial: { opacity: 0, y: -30 },
+    animate: { 
+      opacity: 1, 
+      y: 0,
+      transition: { duration: 0.6, ease: "easeOut" }
+    }
+  };
+
+  const staggerContainer = {
+    animate: {
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2
+      }
+    }
+  };
+
+  const productCardVariants = {
+    hidden: { 
+      opacity: 0, 
+      y: 20, 
+      scale: 0.95 
+    },
+    visible: { 
+      opacity: 1, 
+      y: 0, 
+      scale: 1,
+      transition: { 
+        duration: 0.4, 
+        ease: "easeOut" 
+      }
+    },
+    hover: { 
+      y: -8, 
+      scale: 1.02,
+      transition: { 
+        duration: 0.3, 
+        ease: "easeOut" 
+      }
+    }
+  };
+
+  const plusIconVariants = {
+    initial: { rotate: 0, scale: 1 },
+    rotate: { 
+      rotate: 180, 
+      scale: 1.1,
+      transition: { 
+        duration: 0.3, 
+        ease: "easeInOut" 
+      }
+    },
+    reset: { 
+      rotate: 0, 
+      scale: 1,
+      transition: { 
+        duration: 0.3, 
+        ease: "easeInOut" 
+      }
+    }
+  };
+
+  const imageHoverVariants = {
+    hover: { 
+      scale: 1.1,
+      transition: { 
+        duration: 0.4, 
+        ease: "easeOut" 
+      }
+    }
+  };
+
+  // Dropdown animations
+  const dropdownVariants = {
+    hidden: { 
+      opacity: 0, 
+      y: -10,
+      scale: 0.95
+    },
+    visible: {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      transition: {
+        duration: 0.2,
+        ease: "easeOut"
+      }
+    },
+    exit: {
+      opacity: 0,
+      y: -10,
+      scale: 0.95,
+      transition: {
+        duration: 0.15,
+        ease: "easeIn"
+      }
+    }
+  };
+
+  const optionVariants = {
+    hidden: { 
+      opacity: 0, 
+      x: -20,
+      scale: 0.9
+    },
+    visible: (i) => ({
+      opacity: 1,
+      x: 0,
+      scale: 1,
+      transition: {
+        duration: 0.3,
+        ease: "easeOut",
+        delay: i * 0.05
+      }
+    }),
+    hover: {
+      scale: 1.02,
+      x: 5,
+      transition: {
+        duration: 0.2,
+        ease: "easeOut"
+      }
+    }
+  };
+
+  // Enhanced products grid with individual timing
+  const productItemVariants = {
+    hidden: { 
+      opacity: 0, 
+      y: 30, 
+      scale: 0.9,
+      rotateX: -15
+    },
+    visible: (i) => ({ 
+      opacity: 1, 
+      y: 0, 
+      scale: 1,
+      rotateX: 0,
+      transition: { 
+        duration: 0.5, 
+        ease: "easeOut",
+        delay: i * 0.1
+      }
+    }),
+    hover: { 
+      y: -8, 
+      scale: 1.02,
+      rotateX: 5,
+      transition: { 
+        duration: 0.3, 
+        ease: "easeOut" 
+      }
+    }
+  };
+
+  const productsGridVariants = {
+    initial: { opacity: 0 },
+    animate: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.3
+      }
+    }
+  };
 
   // Load products on component mount
   useEffect(() => {
@@ -307,24 +486,50 @@ const Products = () => {
         <meta name="description" content="Browse our comprehensive collection of industrial spare parts and equipment" />
       </Helmet>
 
-      <div className="min-h-screen bg-gray-50 py-12">
+      <motion.div 
+        className="min-h-screen bg-gray-50 py-12"
+        variants={pageVariants}
+        initial="initial"
+        animate="animate"
+      >
         <div className="container mx-auto px-4">
           {/* Header */}
-          <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+          <motion.div 
+            className="text-center mb-12"
+            variants={staggerContainer}
+            initial="initial"
+            animate="animate"
+          >
+            <motion.h1 
+              className="text-4xl md:text-5xl font-bold text-gray-900 mb-4"
+              variants={headerVariants}
+            >
               Industrial Products
-            </h1>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            </motion.h1>
+            <motion.p 
+              className="text-lg text-gray-600 max-w-2xl mx-auto"
+              variants={headerVariants}
+            >
               Discover our comprehensive collection of high-quality industrial spare parts, 
               tools, and equipment for your business needs.
-            </p>
-          </div>
+            </motion.p>
+          </motion.div>
 
           {/* Search and Filters */}
-          <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
+          <motion.div 
+            className="bg-white rounded-lg shadow-sm p-6 mb-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {/* Search */}
-              <div className="md:col-span-2">
+              <motion.div 
+                className="md:col-span-2"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4, delay: 0.3 }}
+              >
                 <ProductSearch 
                   onSearchResults={handleSearchResults}
                   placeholder={
@@ -335,51 +540,102 @@ const Products = () => {
                       : "Search products by name..."
                   }
                 />
-              </div>
+              </motion.div>
 
               {/* Category Filter */}
-              <div>
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => handleCategoryChange(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                >
-                  <option value="">All Categories</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4, delay: 0.4 }}
+              >
+                <div className="relative">
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => handleCategoryChange(e.target.value)}
+                    onFocus={() => setIsCategoryDropdownOpen(true)}
+                    onBlur={() => setIsCategoryDropdownOpen(false)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
+                  >
+                    <option value="">All Categories</option>
+                    {categories.map((category, index) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                  
+                  {/* Animated dropdown indicator */}
+                  <motion.div
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none"
+                    animate={{ rotate: isCategoryDropdownOpen ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </motion.div>
+                </div>
+              </motion.div>
 
               {/* Sort */}
-              <div>
-                <select
-                  value={`${sortBy}-${sortOrder}`}
-                  onChange={(e) => handleSortChange(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                  disabled={isSearchMode}
-                >
-                  <option value="created_at-desc">Newest First</option>
-                  <option value="created_at-asc">Oldest First</option>
-                  <option value="name-asc">Name A-Z</option>
-                  <option value="name-desc">Name Z-A</option>
-                  <option value="price-asc">Price Low-High</option>
-                  <option value="price-desc">Price High-Low</option>
-                </select>
-              </div>
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4, delay: 0.5 }}
+              >
+                <div className="relative">
+                  <select
+                    value={`${sortBy}-${sortOrder}`}
+                    onChange={(e) => handleSortChange(e.target.value)}
+                    onFocus={() => setIsSortDropdownOpen(true)}
+                    onBlur={() => setIsSortDropdownOpen(false)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
+                    disabled={isSearchMode}
+                  >
+                    <option value="created_at-desc">Newest First</option>
+                    <option value="created_at-asc">Oldest First</option>
+                    <option value="name-asc">Name A-Z</option>
+                    <option value="name-desc">Name Z-A</option>
+                    <option value="price-asc">Price Low-High</option>
+                    <option value="price-desc">Price High-Low</option>
+                  </select>
+                  
+                  {/* Animated dropdown indicator */}
+                  <motion.div
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none"
+                    animate={{ rotate: isSortDropdownOpen ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </motion.div>
+                </div>
+              </motion.div>
             </div>
 
             {/* Clear Filters */}
-            {(searchQuery || selectedCategory || sortBy !== "created_at" || sortOrder !== "desc" || isSearchMode) && (
-              <div className="mt-4 text-center">
-                <Button variant="outline" size="sm" onClick={clearFilters}>
-                  Clear Filters
-                </Button>
-              </div>
-            )}
-          </div>
+            <AnimatePresence>
+              {(searchQuery || selectedCategory || sortBy !== "created_at" || sortOrder !== "desc" || isSearchMode) && (
+                <motion.div 
+                  className="mt-4 text-center"
+                  initial={{ opacity: 0, y: -10, scale: 0.9 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.9 }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                >
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Button variant="outline" size="sm" onClick={clearFilters}>
+                      Clear Filters
+                    </Button>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
 
           {/* Products Grid */}
           {products.length === 0 ? (
@@ -407,32 +663,70 @@ const Products = () => {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {products.map((product) => (
-                <Card key={product.id} className="group hover:shadow-xl transition-all duration-300 border-0 bg-white">
+            <motion.div 
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+              variants={productsGridVariants}
+              initial="initial"
+              animate="animate"
+            >
+              <AnimatePresence mode="wait">
+                {products.map((product, index) => (
+                  <motion.div
+                    key={product.id}
+                    variants={productItemVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="hidden"
+                    whileHover="hover"
+                    layout
+                    custom={index}
+                  >
+                    <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-white h-full">
                   <CardContent className="p-0 relative overflow-hidden">
                     {/* Product Image */}
                     <div className="relative aspect-square overflow-hidden rounded-t-lg">
-                      <img
+                      <motion.img
                         src={product.image_url || "https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=400&h=300&fit=crop"}
                         alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        className="w-full h-full object-cover"
+                        variants={imageHoverVariants}
+                        whileHover="hover"
                       />
                       
                       {/* Add to Cart Button - Modern Plus Icon */}
                       <div className="absolute top-3 right-3">
-                        <button
+                        <motion.button
                           onClick={() => handleAddToCart(product.id)}
                           disabled={addingToCart[product.id] || product.stock_qty === 0}
                           className="bg-white/90 backdrop-blur-sm hover:bg-white text-gray-700 hover:text-primary p-2 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
                           title="Add to Cart"
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.95 }}
                         >
-                          {addingToCart[product.id] ? (
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                          ) : (
-                            <Plus className="w-5 h-5" />
-                          )}
-                        </button>
+                          <AnimatePresence mode="wait">
+                            {addingToCart[product.id] ? (
+                              <motion.div
+                                key="loading"
+                                initial={{ opacity: 0, rotate: -90 }}
+                                animate={{ opacity: 1, rotate: 0 }}
+                                exit={{ opacity: 0, rotate: 90 }}
+                                transition={{ duration: 0.2 }}
+                              >
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                              </motion.div>
+                            ) : (
+                              <motion.div
+                                key="plus"
+                                variants={plusIconVariants}
+                                initial="initial"
+                                whileHover="rotate"
+                                animate="reset"
+                              >
+                                <Plus className="w-5 h-5" />
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </motion.button>
                       </div>
 
                       {/* Removed Quick Actions Overlay - no single product view needed */}
@@ -474,9 +768,11 @@ const Products = () => {
                       {/* Removed Add to Cart Button - only plus icon needed */}
                     </div>
                   </CardContent>
-                </Card>
-              ))}
-            </div>
+                    </Card>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </motion.div>
           )}
 
           {/* Results Count */}
@@ -506,7 +802,7 @@ const Products = () => {
 
           {/* Removed Cart Count Display - no floating badge needed */}
         </div>
-      </div>
+      </motion.div>
     </>
   );
 };
