@@ -28,7 +28,25 @@ router.get('/new',
   asyncHandler(ProductController.getNewArrivals)
 );
 
-// GET /api/products/:id - Get product details (must be last)
+// GET /api/products/:id/details - Get comprehensive product details with reviews and related products
+router.get('/:id/details',
+  optionalAuth,
+  asyncHandler(ProductController.getProductDetails)
+);
+
+// GET /api/products/:id/reviews - Get product reviews with pagination and sorting
+router.get('/:id/reviews',
+  optionalAuth,
+  asyncHandler(ProductController.getProductReviews)
+);
+
+// GET /api/products/:id/related - Get related products
+router.get('/:id/related',
+  optionalAuth,
+  asyncHandler(ProductController.getRelatedProducts)
+);
+
+// GET /api/products/:id - Get basic product details (must be last)
 router.get('/:id',
   optionalAuth,
   asyncHandler(ProductController.getProduct)

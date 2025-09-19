@@ -111,4 +111,72 @@ export class ProductController {
       throw new AppError(error.message, 500, 'NEW_ARRIVALS_FETCH_ERROR');
     }
   }
+
+  static async getProductDetails(req, res) {
+    try {
+      const { id } = req.params;
+      const product = await simpleProductService.getProductDetails(id);
+
+      if (!product) {
+        throw new AppError('Product not found', 404, 'PRODUCT_NOT_FOUND');
+      }
+
+      res.json({
+        success: true,
+        data: {
+          product
+        }
+      });
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      throw new AppError(error.message, 500, 'PRODUCT_DETAILS_FETCH_ERROR');
+    }
+  }
+
+  static async getProductReviews(req, res) {
+    try {
+      const { id } = req.params;
+      const {
+        page = 1,
+        limit = 10,
+        sort = 'newest'
+      } = req.query;
+
+      const options = {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        sort
+      };
+
+      const result = await simpleProductService.getProductReviews(id, options);
+
+      res.json({
+        success: true,
+        data: {
+          reviews: result.reviews,
+          pagination: result.pagination
+        }
+      });
+    } catch (error) {
+      throw new AppError(error.message, 500, 'PRODUCT_REVIEWS_FETCH_ERROR');
+    }
+  }
+
+  static async getRelatedProducts(req, res) {
+    try {
+      const { id } = req.params;
+      const limit = req.query.limit ? parseInt(req.query.limit) : 4;
+      
+      const products = await simpleProductService.getRelatedProducts(id, limit);
+
+      res.json({
+        success: true,
+        data: {
+          products
+        }
+      });
+    } catch (error) {
+      throw new AppError(error.message, 500, 'RELATED_PRODUCTS_FETCH_ERROR');
+    }
+  }
 }
