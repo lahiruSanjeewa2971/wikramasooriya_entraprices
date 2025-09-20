@@ -23,6 +23,20 @@ class ProductService {
     }
   }
 
+  // Get comprehensive product details with reviews and related products
+  async getProductDetails(id) {
+    try {
+      const response = await apiClient.get(`/products/${id}/details`);
+      return response.data;
+    } catch (error) {
+      const message = error.response?.data?.error?.message || 
+                     error.response?.data?.message || 
+                     error.message || 
+                     'Failed to fetch product details.';
+      throw new Error(message);
+    }
+  }
+
   // Get products by category
   async getProductsByCategory(category) {
     try {
