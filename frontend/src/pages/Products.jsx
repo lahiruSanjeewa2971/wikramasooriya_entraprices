@@ -334,12 +334,15 @@ const Products = () => {
       // Set loading state for this specific product
       setAddingToCart(prev => ({ ...prev, [productId]: true }));
 
+      console.log('Products: Adding product to cart:', productId);
       await cartService.addToCart(productId, 1);
+      console.log('Products: Product added to cart successfully');
       toastService.show("Item added to cart successfully!", "success");
       
       // Update cart count immediately
       await loadCartCount();
     } catch (error) {
+      console.error('Products: Error adding to cart:', error);
       toastService.show(error.message || "Failed to add item to cart", "error");
     } finally {
       // Clear loading state for this product
@@ -347,7 +350,9 @@ const Products = () => {
     }
   };
 
-  // Removed handleProductClick function - no single product view needed
+  const handleProductClick = (productId) => {
+    navigate(`/products/${productId}`);
+  };
 
   const clearFilters = () => {
     setSearchQuery("");
@@ -681,7 +686,10 @@ const Products = () => {
                     layout
                     custom={index}
                   >
-                    <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-white h-full">
+                    <Card 
+                      className="group hover:shadow-xl transition-all duration-300 border-0 bg-white h-full cursor-pointer"
+                      onClick={() => handleProductClick(product.id)}
+                    >
                   <CardContent className="p-0 relative overflow-hidden">
                     {/* Product Image */}
                     <div className="relative aspect-square overflow-hidden rounded-t-lg">
@@ -696,7 +704,10 @@ const Products = () => {
                       {/* Add to Cart Button - Modern Plus Icon */}
                       <div className="absolute top-3 right-3">
                         <motion.button
-                          onClick={() => handleAddToCart(product.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddToCart(product.id);
+                          }}
                           disabled={addingToCart[product.id] || product.stock_qty === 0}
                           className="bg-white/90 backdrop-blur-sm hover:bg-white text-gray-700 hover:text-primary p-2 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
                           title="Add to Cart"

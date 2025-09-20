@@ -7,7 +7,10 @@ class CartService {
       const response = await apiClient.get('/cart');
       return response.data;
     } catch (error) {
-      const message = error.response?.data?.message || 'Failed to fetch cart.';
+      const message = error.response?.data?.error?.message || 
+                     error.response?.data?.message || 
+                     error.message || 
+                     'Failed to fetch cart.';
       throw new Error(message);
     }
   }
@@ -25,7 +28,11 @@ class CartService {
       
       return response.data;
     } catch (error) {
-      const message = error.response?.data?.message || 'Failed to add item to cart.';
+      // Extract error message from the backend response structure
+      const message = error.response?.data?.error?.message || 
+                     error.response?.data?.message || 
+                     error.message || 
+                     'Failed to add item to cart.';
       throw new Error(message);
     }
   }
@@ -42,7 +49,10 @@ class CartService {
       
       return response.data;
     } catch (error) {
-      const message = error.response?.data?.message || 'Failed to update cart item.';
+      const message = error.response?.data?.error?.message || 
+                     error.response?.data?.message || 
+                     error.message || 
+                     'Failed to update cart item.';
       throw new Error(message);
     }
   }
@@ -57,7 +67,10 @@ class CartService {
       
       return response.data;
     } catch (error) {
-      const message = error.response?.data?.message || 'Failed to remove item from cart.';
+      const message = error.response?.data?.error?.message || 
+                     error.response?.data?.message || 
+                     error.message || 
+                     'Failed to remove item from cart.';
       throw new Error(message);
     }
   }
@@ -72,7 +85,10 @@ class CartService {
       
       return response.data;
     } catch (error) {
-      const message = error.response?.data?.message || 'Failed to clear cart.';
+      const message = error.response?.data?.error?.message || 
+                     error.response?.data?.message || 
+                     error.message || 
+                     'Failed to clear cart.';
       throw new Error(message);
     }
   }
@@ -83,7 +99,10 @@ class CartService {
       const response = await apiClient.post('/cart/checkout/delivery', checkoutData);
       return response.data;
     } catch (error) {
-      const message = error.response?.data?.message || 'Checkout failed. Please try again.';
+      const message = error.response?.data?.error?.message || 
+                     error.response?.data?.message || 
+                     error.message || 
+                     'Checkout failed. Please try again.';
       throw new Error(message);
     }
   }
@@ -94,7 +113,10 @@ class CartService {
       const response = await apiClient.post('/cart/checkout/pickup', checkoutData);
       return response.data;
     } catch (error) {
-      const message = error.response?.data?.message || 'Checkout failed. Please try again.';
+      const message = error.response?.data?.error?.message || 
+                     error.response?.data?.message || 
+                     error.message || 
+                     'Checkout failed. Please try again.';
       throw new Error(message);
     }
   }

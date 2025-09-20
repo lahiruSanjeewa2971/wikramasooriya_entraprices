@@ -41,9 +41,8 @@ const TopNav = () => {
     };
 
     const handleCartUpdate = () => {
-      if (user) {
-        loadCartItemCount();
-      }
+      console.log('TopNav: Received cart:updated event');
+      loadCartItemCount();
     };
 
     window.addEventListener('auth:login', handleLogin);
@@ -78,10 +77,13 @@ const TopNav = () => {
   // Load cart item count
   const loadCartItemCount = async () => {
     try {
+      console.log('TopNav: Loading cart count...');
       const count = await cartService.getCartItemCount();
+      console.log('TopNav: Cart count received:', count);
       setCartItemCount(count || 0);
     } catch (error) {
       console.error('Failed to load cart count:', error);
+      setCartItemCount(0);
     }
   };
 
