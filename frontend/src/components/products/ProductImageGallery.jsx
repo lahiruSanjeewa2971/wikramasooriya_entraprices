@@ -40,7 +40,7 @@ const ProductImageGallery = ({ images, productName }) => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* Main Image */}
       <div className="relative aspect-square bg-white rounded-lg overflow-hidden shadow-lg group">
         <motion.img
@@ -57,11 +57,11 @@ const ProductImageGallery = ({ images, productName }) => {
         {/* Zoom Button */}
         <motion.button
           onClick={handleZoom}
-          className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm hover:bg-white text-gray-700 p-2 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110"
+          className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-white/90 backdrop-blur-sm hover:bg-white text-gray-700 p-1.5 sm:p-2 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110"
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.95 }}
         >
-          <ZoomIn className="w-5 h-5" />
+          <ZoomIn className="w-4 h-4 sm:w-5 sm:h-5" />
         </motion.button>
 
         {/* Navigation Arrows (if multiple images) */}
@@ -69,20 +69,20 @@ const ProductImageGallery = ({ images, productName }) => {
           <>
             <motion.button
               onClick={handlePrev}
-              className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/90 backdrop-blur-sm hover:bg-white text-gray-700 p-2 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
+              className="absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 bg-white/90 backdrop-blur-sm hover:bg-white text-gray-700 p-1.5 sm:p-2 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
             </motion.button>
             
             <motion.button
               onClick={handleNext}
-              className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/90 backdrop-blur-sm hover:bg-white text-gray-700 p-2 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
+              className="absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 bg-white/90 backdrop-blur-sm hover:bg-white text-gray-700 p-1.5 sm:p-2 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
             >
-              <ChevronRight className="w-5 h-5" />
+              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
             </motion.button>
           </>
         )}

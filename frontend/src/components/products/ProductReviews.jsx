@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { Star, ThumbsUp, User, Calendar, CheckCircle } from 'lucide-react';
 import StarRating from './StarRating';
 import ReviewFormModal from './ReviewFormModal';
+import ReviewHelpfulness from './ReviewHelpfulness';
+import authService from '@/services/authService';
 
 const ProductReviews = ({ reviews, averageRating, reviewCount, productId, productName, onReviewSubmitted }) => {
   const [sortBy, setSortBy] = useState('newest');
@@ -40,60 +42,64 @@ const ProductReviews = ({ reviews, averageRating, reviewCount, productId, produc
       .slice(0, 2);
   };
 
-  const ReviewCard = ({ review }) => (
-    <motion.div
-      className="bg-white rounded-lg border border-gray-200 p-6"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-    >
-      <div className="flex items-start space-x-4">
-        {/* User Avatar */}
-        <div className="flex-shrink-0">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
-            {getInitials(review.user_name)}
-          </div>
-        </div>
+  const ReviewCard = ({ review }) => {
+    const currentUser = authService.getCurrentUser();
+    const currentUserId = currentUser?.id;
 
-        <div className="flex-1 min-w-0">
-          {/* Review Header */}
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center space-x-2">
-              <h4 className="text-sm font-semibold text-gray-900">{review.user_name}</h4>
-              {review.is_verified_purchase && (
-                <CheckCircle className="w-4 h-4 text-green-500" title="Verified Purchase" />
-              )}
-            </div>
-            <div className="flex items-center space-x-2 text-sm text-gray-500">
-              <Calendar className="w-4 h-4" />
-              <span>{formatDate(review.created_at)}</span>
+    return (
+      <motion.div
+        className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <div className="flex items-start space-x-3 sm:space-x-4">
+          {/* User Avatar */}
+          <div className="flex-shrink-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-500 to-purple-500 text-white rounded-full flex items-center justify-center text-xs sm:text-sm font-bold">
+              {getInitials(review.user_name)}
             </div>
           </div>
 
-          {/* Rating */}
-          <div className="flex items-center space-x-2 mb-3">
-            <StarRating rating={review.rating} size="sm" />
-            <span className="text-sm text-gray-600">{review.title}</span>
-          </div>
+          <div className="flex-1 min-w-0">
+            {/* Review Header - Mobile responsive */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0 mb-2">
+              <div className="flex items-center space-x-2">
+                <h4 className="text-sm font-semibold text-gray-900 truncate">{review.user_name}</h4>
+                {review.is_verified_purchase && (
+                  <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" title="Verified Purchase" />
+                )}
+              </div>
+              <div className="flex items-center space-x-2 text-xs sm:text-sm text-gray-500">
+                <Calendar className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                <span className="whitespace-nowrap">{formatDate(review.created_at)}</span>
+              </div>
+            </div>
 
-          {/* Review Content */}
-          <p className="text-gray-700 mb-4 leading-relaxed">{review.comment}</p>
+            {/* Rating - Mobile responsive */}
+            <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 mb-3">
+              <div className="flex items-center space-x-2">
+                <StarRating rating={review.rating} size="sm" />
+              </div>
+              <span className="text-sm text-gray-600 break-words">{review.title}</span>
+            </div>
 
-          {/* Helpful Button */}
-          <div className="flex items-center space-x-4">
-            <motion.button
-              className="flex items-center space-x-1 text-sm text-gray-500 hover:text-primary transition-colors"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <ThumbsUp className="w-4 h-4" />
-              <span>Helpful ({review.helpful_count})</span>
-            </motion.button>
+            {/* Review Content */}
+            <p className="text-sm sm:text-base text-gray-700 mb-4 leading-relaxed break-words">{review.comment}</p>
+
+            {/* Helpfulness Component */}
+            <ReviewHelpfulness
+              reviewId={review.id}
+              productId={productId}
+              initialHelpfulCount={review.helpful_count || 0}
+              currentUserId={currentUserId}
+              reviewUserId={review.user_id}
+            />
           </div>
         </div>
-      </div>
-    </motion.div>
-  );
+      </motion.div>
+    );
+  };
 
   const handleReviewSubmitted = () => {
     // Call the parent component's callback to refresh reviews
@@ -105,9 +111,9 @@ const ProductReviews = ({ reviews, averageRating, reviewCount, productId, produc
   return (
     <div className="space-y-6">
       {/* Reviews Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+      <div className="flex flex-col space-y-4">
         <div>
-          <h3 className="text-2xl font-bold text-gray-900">Customer Reviews</h3>
+          <h3 className="text-xl sm:text-2xl font-bold text-gray-900">Customer Reviews</h3>
           <div className="flex items-center space-x-4 mt-2">
             <StarRating 
               rating={averageRating} 
@@ -118,11 +124,12 @@ const ProductReviews = ({ reviews, averageRating, reviewCount, productId, produc
           </div>
         </div>
         
-        <div className="flex space-x-3">
+        {/* Mobile-friendly controls */}
+        <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 sm:justify-end">
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+            className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
           >
             <option value="newest">Newest First</option>
             <option value="oldest">Oldest First</option>
@@ -132,7 +139,7 @@ const ProductReviews = ({ reviews, averageRating, reviewCount, productId, produc
           
           <button
             onClick={() => setShowReviewForm(true)}
-            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+            className="w-full sm:w-auto px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium"
           >
             Write a Review
           </button>

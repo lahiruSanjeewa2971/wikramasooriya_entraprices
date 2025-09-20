@@ -45,4 +45,10 @@ router.post('/product/:id/:reviewId/helpful',
   asyncHandler(ReviewController.markHelpful)
 );
 
+// GET /api/reviews/:reviewId/vote-status - Get user's vote status for a review
+router.get('/:reviewId/vote-status',
+  authenticateToken,
+  asyncHandler(ReviewController.getUserVoteStatus)
+);
+
 export default router;

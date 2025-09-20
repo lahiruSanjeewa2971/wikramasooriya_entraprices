@@ -204,46 +204,31 @@ export const simpleReviewService = {
     `, [reviewId, userId]);
 
     if (existingVote.rows.length > 0) {
-      // Update existing vote
-      const vote = existingVote.rows[0];
-      if (vote.is_helpful === isHelpful) {
-        // User is removing their vote
-        await query(`
-          DELETE FROM review_helpfulness 
-          WHERE review_id = $1 AND user_id = $2
-        `, [reviewId, userId]);
+      // User already voted - remove their vote (toggle off)
+      await query(`
+        DELETE FROM review_helpfulness 
+        WHERE review_id = $1 AND user_id = $2
+      `, [reviewId, userId]);
 
-        // Update helpful count
-        await query(`
-          UPDATE product_reviews 
-          SET helpful_count = helpful_count - 1
-          WHERE id = $1
-        `, [reviewId]);
-      } else {
-        // User is changing their vote
-        await query(`
-          UPDATE review_helpfulness 
-          SET is_helpful = $1
-          WHERE review_id = $2 AND user_id = $3
-        `, [isHelpful, reviewId, userId]);
-
-        // Update helpful count (no change needed as it's just a flip)
-      }
+      // Update helpful count - decrease by 1
+      await query(`
+        UPDATE product_reviews 
+        SET helpful_count = helpful_count - 1
+        WHERE id = $1
+      `, [reviewId]);
     } else {
-      // Create new vote
+      // Create new helpful vote
       await query(`
         INSERT INTO review_helpfulness (review_id, user_id, is_helpful)
-        VALUES ($1, $2, $3)
-      `, [reviewId, userId, isHelpful]);
+        VALUES ($1, $2, true)
+      `, [reviewId, userId]);
 
-      // Update helpful count
-      if (isHelpful) {
-        await query(`
-          UPDATE product_reviews 
-          SET helpful_count = helpful_count + 1
-          WHERE id = $1
-        `, [reviewId]);
-      }
+      // Update helpful count - increase by 1
+      await query(`
+        UPDATE product_reviews 
+        SET helpful_count = helpful_count + 1
+        WHERE id = $1
+      `, [reviewId]);
     }
 
     // Get updated helpful count
@@ -287,5 +272,24 @@ export const simpleReviewService = {
     `, [reviewId]);
 
     return result.rows[0] || null;
+  },
+
+  // Get user's vote status for a specific review
+  async getUserVoteStatus(reviewId, userId) {
+    const result = await query(`
+      SELECT is_helpful, created_at
+      FROM review_helpfulness 
+      WHERE review_id = $1 AND user_id = $2
+    `, [reviewId, userId]);
+
+    if (result.rows.length === 0) {
+      return { hasVoted: false, isHelpful: null };
+    }
+
+    return { 
+      hasVoted: true, 
+      isHelpful: result.rows[0].is_helpful,
+      votedAt: result.rows[0].created_at
+    };
   }
 };

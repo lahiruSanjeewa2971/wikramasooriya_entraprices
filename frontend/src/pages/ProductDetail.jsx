@@ -101,15 +101,15 @@ const ProductDetail = () => {
   };
 
   if (loading) {
-    return (
-      <>
-        <Helmet>
+  return (
+    <>
+      <Helmet>
           <title>Loading Product - Wikramasooriya Enterprises</title>
-        </Helmet>
-        
-        <div className="min-h-screen bg-gray-50 py-16">
-          <div className="container mx-auto px-4">
-            <div className="max-w-4xl mx-auto">
+      </Helmet>
+      
+      <div className="min-h-screen bg-gray-50 py-16">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto">
               <div className="bg-white rounded-lg shadow-lg p-8">
                 <div className="text-center py-12">
                   <Loader2 className="h-12 w-12 text-primary mx-auto mb-4 animate-spin" />
@@ -134,19 +134,19 @@ const ProductDetail = () => {
         <div className="min-h-screen bg-gray-50 py-16">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto">
-              <div className="bg-white rounded-lg shadow-lg p-8">
-                <div className="text-center py-12">
-                  <Package className="h-24 w-24 text-gray-300 mx-auto mb-4" />
+            <div className="bg-white rounded-lg shadow-lg p-8">
+              <div className="text-center py-12">
+                <Package className="h-24 w-24 text-gray-300 mx-auto mb-4" />
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">Product Not Found</h3>
                   <p className="text-gray-600 mb-6">{error}</p>
-                  <div className="text-sm text-gray-500">
-                    <p>Product ID: {id}</p>
-                  </div>
+                <div className="text-sm text-gray-500">
+                  <p>Product ID: {id}</p>
                 </div>
               </div>
             </div>
           </div>
         </div>
+      </div>
       </>
     );
   }
@@ -166,20 +166,25 @@ const ProductDetail = () => {
       >
         {/* Product Header */}
         <div className="bg-white border-b border-gray-200">
-          <div className="container mx-auto px-4 py-6">
-            <div className="flex items-center space-x-2 text-sm text-gray-500">
-              <span>Products</span>
-              <span>/</span>
-              <span>{product?.category_name}</span>
-              <span>/</span>
-              <span className="text-gray-900 font-medium">{product?.name}</span>
+          <div className="container mx-auto px-4 py-4 sm:py-6">
+            {/* Mobile-friendly breadcrumb */}
+            <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
+              <div className="flex items-center space-x-2 text-sm text-gray-500 overflow-x-auto">
+                <span className="whitespace-nowrap">Products</span>
+                <span>/</span>
+                <span className="whitespace-nowrap">{product?.category_name}</span>
+                <span>/</span>
+                <span className="text-gray-900 font-medium truncate max-w-[200px] sm:max-w-none">
+                  {product?.name}
+                </span>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Main Product Content */}
-        <div className="container mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-16">
+        <div className="container mx-auto px-4 py-4 sm:py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 mb-8 sm:mb-16">
             {/* Product Images */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
@@ -207,12 +212,12 @@ const ProductDetail = () => {
 
           {/* Product Reviews */}
           <motion.div
-            className="mb-16"
+            className="mb-8 sm:mb-16"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
           >
-            <div className="bg-white rounded-lg shadow-sm p-8">
+            <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 lg:p-8">
               <ProductReviews 
                 reviews={product?.recent_reviews || []}
                 averageRating={product?.average_rating || 0}
@@ -230,7 +235,7 @@ const ProductDetail = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
           >
-            <div className="bg-white rounded-lg shadow-sm p-8">
+            <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 lg:p-8">
               <RelatedProducts 
                 products={product?.related_products || []}
                 title="Related Products"

@@ -88,6 +88,40 @@ class ReviewService {
       throw new Error(message);
     }
   }
+
+  // Mark review as helpful/unhelpful
+  async markHelpful(productId, reviewId, isHelpful) {
+    try {
+      const response = await apiClient.post(`/reviews/product/${productId}/${reviewId}/helpful`, {
+        is_helpful: isHelpful
+      });
+      return response.data;
+    } catch (error) {
+      const message = error.response?.data?.error?.message || 
+                     error.response?.data?.message || 
+                     error.message || 
+                     'Failed to update review helpfulness.';
+      throw new Error(message);
+    }
+  }
+
+  // Get user's vote status for a review
+  async getUserVoteStatus(reviewId) {
+    try {
+      const response = await apiClient.get(`/reviews/${reviewId}/vote-status`);
+      return response.data;
+    } catch (error) {
+      // If no vote exists, return null instead of throwing error
+      if (error.response?.status === 404) {
+        return { data: { hasVoted: false, isHelpful: null } };
+      }
+      const message = error.response?.data?.error?.message || 
+                     error.response?.data?.message || 
+                     error.message || 
+                     'Failed to fetch vote status.';
+      throw new Error(message);
+    }
+  }
 }
 
 export default new ReviewService();

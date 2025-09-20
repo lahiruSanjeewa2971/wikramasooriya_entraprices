@@ -153,6 +153,27 @@ export class ReviewController {
     }
   }
 
+  static async getUserVoteStatus(req, res) {
+    try {
+      const { reviewId } = req.params;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        throw new AppError('Authentication required', 401, 'AUTH_REQUIRED');
+      }
+
+      const result = await simpleReviewService.getUserVoteStatus(reviewId, userId);
+
+      res.json({
+        success: true,
+        data: result
+      });
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      throw new AppError(error.message, 500, 'GET_VOTE_STATUS_ERROR');
+    }
+  }
+
   // Get user's review for a specific product
   static async getUserReview(req, res) {
     try {
