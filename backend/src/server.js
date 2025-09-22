@@ -21,6 +21,7 @@ import uploadRoutes from './routes/upload.js';
 import excelRoutes from './routes/excel.js';
 import googleAuthRoutes from './routes/googleAuth.js';
 import reviewRoutes from './routes/reviews.js';
+import userProfileRoutes from './routes/userProfile.js';
 
 // Load environment variables
 dotenv.config();
@@ -124,6 +125,7 @@ app.use(`${API_PREFIX}/contact`, contactRoutes);
 app.use(`${API_PREFIX}/admin`, adminRoutes);
 app.use(`${API_PREFIX}/excel`, excelRoutes);
 app.use(`${API_PREFIX}/reviews`, reviewRoutes);
+app.use(`${API_PREFIX}/users`, userProfileRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {

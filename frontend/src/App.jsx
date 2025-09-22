@@ -14,6 +14,7 @@ import ProductDetail from "./pages/ProductDetail.jsx";
 import Contact from "./pages/Contact.jsx";
 import Cart from "./pages/Cart.jsx";
 import About from "./pages/About.jsx";
+import Profile from "./pages/Profile.jsx";
 import NotFound from "./pages/NotFound.jsx";
 
 const queryClient = new QueryClient();
@@ -41,6 +42,7 @@ const AppContent = () => {
             
             {/* Protected Routes */}
             <Route path="/cart" element={<Cart />} />
+            <Route path="/profile" element={<Profile />} />
             
             {/* Catch-all Route */}
             <Route path="*" element={<NotFound />} />

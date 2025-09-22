@@ -252,7 +252,10 @@ const TopNav = () => {
                     {/* Menu Items */}
                     <div className="py-2">
                       {/* Profile Link */}
-                      <button className="w-full px-6 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200 flex items-center space-x-3">
+                      <button 
+                        onClick={() => navigate('/profile')}
+                        className="w-full px-6 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200 flex items-center space-x-3"
+                      >
                         <User className="w-4 h-4" />
                         <span>View Profile</span>
                       </button>
