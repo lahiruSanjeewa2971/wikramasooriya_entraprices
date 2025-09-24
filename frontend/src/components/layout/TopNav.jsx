@@ -45,14 +45,21 @@ const TopNav = () => {
       loadCartItemCount();
     };
 
+    const handleUserUpdate = (event) => {
+      console.log('TopNav: Received auth:userUpdated event', event.detail.user);
+      setUser(event.detail.user);
+    };
+
     window.addEventListener('auth:login', handleLogin);
     window.addEventListener('auth:logout', handleLogout);
     window.addEventListener('cart:updated', handleCartUpdate);
+    window.addEventListener('auth:userUpdated', handleUserUpdate);
 
     return () => {
       window.removeEventListener('auth:login', handleLogin);
       window.removeEventListener('auth:logout', handleLogout);
       window.removeEventListener('cart:updated', handleCartUpdate);
+      window.removeEventListener('auth:userUpdated', handleUserUpdate);
     };
   }, []); // Remove user dependency to prevent constant re-registration
 

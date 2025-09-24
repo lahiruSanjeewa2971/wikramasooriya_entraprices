@@ -1,9 +1,17 @@
 import apiClient from './apiClient';
+import { clearAvatarCache, shouldClearCache } from '../utils/cacheUtils';
 
 class AuthService {
   // Login user
   async login(credentials) {
     try {
+      // Check if switching from Google OAuth to credentials
+      const previousUser = this.getCurrentUser();
+      if (shouldClearCache(previousUser)) {
+        console.log('🧹 Switching from Google OAuth to credentials - clearing cache');
+        clearAvatarCache();
+      }
+      
       const response = await apiClient.post('/auth/login', credentials);
       const { tokens, user } = response.data.data;
       
@@ -45,9 +53,19 @@ class AuthService {
 
   // Logout user
   logout() {
+    // Get current user before clearing to check if cache clearing is needed
+    const currentUser = this.getCurrentUser();
+    
+    // Clear authentication data
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
+    
+    // Clear cache if user was a Google OAuth user (to prevent CORS issues)
+    if (shouldClearCache(currentUser)) {
+      console.log('🧹 Google OAuth user detected - clearing cache to prevent avatar issues');
+      clearAvatarCache();
+    }
     
     // Dispatch logout event
     window.dispatchEvent(new CustomEvent('auth:logout'));
@@ -101,6 +119,14 @@ class AuthService {
   async googleLogin(googleData) {
     try {
       console.log('AuthService: Starting Google login with data:', googleData);
+      
+      // Check if switching from credentials to Google OAuth
+      const previousUser = this.getCurrentUser();
+      if (previousUser && !shouldClearCache(previousUser)) {
+        console.log('🧹 Switching from credentials to Google OAuth - clearing cache');
+        clearAvatarCache();
+      }
+      
       const response = await apiClient.post('/auth/google/callback', googleData);
       const { tokens, user } = response.data;
       

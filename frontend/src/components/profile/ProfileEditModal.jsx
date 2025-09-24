@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, User, MapPin, Phone, Calendar, Users, FileText, Camera, Trash2, Plus, Edit3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Input from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -451,15 +452,12 @@ const ProfileEditModal = ({ isOpen, onClose, user, profileData, onProfileUpdated
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Date of Birth *
                     </label>
-                    <div className="relative">
-                      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <Input
-                        type="date"
-                        value={personalInfo.date_of_birth}
-                        onChange={(e) => handlePersonalInfoChange('date_of_birth', e.target.value)}
-                        className={`pl-10 ${errors.date_of_birth ? 'border-red-500' : ''}`}
-                      />
-                    </div>
+                    <DatePicker
+                      value={personalInfo.date_of_birth}
+                      onChange={(value) => handlePersonalInfoChange('date_of_birth', value)}
+                      placeholder="Select your date of birth"
+                      error={!!errors.date_of_birth}
+                    />
                     {errors.date_of_birth && <p className="text-red-500 text-sm mt-1">{errors.date_of_birth}</p>}
                   </div>
 

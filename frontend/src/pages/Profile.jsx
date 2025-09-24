@@ -35,6 +35,7 @@ const Profile = () => {
       setLoading(true);
       const response = await userProfileService.getUserProfile();
       setProfileData(response.data.profile);
+      console.log('user', user);
       console.log('Profile data loaded:', response.data.profile);
     } catch (error) {
       console.error('Failed to load profile:', error);
@@ -83,9 +84,30 @@ const Profile = () => {
     }
   };
 
-  const handleProfileUpdated = () => {
+  const handleProfileUpdated = async () => {
     // Refresh profile data when modal closes after successful update
-    loadProfileData();
+    await loadProfileData();
+    
+    // Also update the user data in localStorage to reflect changes in TopNav
+    const currentUser = authService.getCurrentUser();
+    if (currentUser) {
+      // Get the updated profile data from the API response
+      try {
+        const response = await userProfileService.getUserProfile();
+        const updatedProfileData = response.data.profile;
+        
+        const updatedUser = {
+          ...currentUser,
+          avatar_url: updatedProfileData.avatar_url
+        };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        
+        // Dispatch event to notify TopNav of user data change
+        window.dispatchEvent(new CustomEvent('auth:userUpdated', { detail: { user: updatedUser } }));
+      } catch (error) {
+        console.error('Failed to update user data:', error);
+      }
+    }
   };
 
   if (loading) {
