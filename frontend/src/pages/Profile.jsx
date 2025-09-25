@@ -5,7 +5,10 @@ import { User, Mail, Phone, MapPin, Calendar, Edit3, Settings, Star, Package, Hi
 import authService from '@/services/authService';
 import toastService from '@/services/toastService';
 import userProfileService from '@/services/userProfileService';
+import reviewService from '@/services/reviewService';
 import ProfileEditModal from '@/components/profile/ProfileEditModal';
+import ReviewFormModal from '@/components/products/ReviewFormModal';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 const Profile = () => {
   const [user, setUser] = useState(null);
@@ -17,6 +20,10 @@ const Profile = () => {
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isReviewEditModalOpen, setIsReviewEditModalOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [reviewToEdit, setReviewToEdit] = useState(null);
+  const [reviewToDelete, setReviewToDelete] = useState(null);
 
   useEffect(() => {
     const currentUser = authService.getCurrentUser();
@@ -108,6 +115,38 @@ const Profile = () => {
         console.error('Failed to update user data:', error);
       }
     }
+  };
+
+  const handleEditReview = (review) => {
+    setReviewToEdit(review);
+    setIsReviewEditModalOpen(true);
+  };
+
+  const handleDeleteReview = (review) => {
+    setReviewToDelete(review);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteReview = async () => {
+    if (!reviewToDelete) return;
+
+    try {
+      await reviewService.deleteReview(reviewToDelete.product_id, reviewToDelete.id);
+      toastService.success('Review deleted successfully!');
+      
+      // Refresh reviews list
+      await loadReviews();
+      
+      setIsDeleteDialogOpen(false);
+      setReviewToDelete(null);
+    } catch (error) {
+      toastService.error(error.message || 'Failed to delete review');
+    }
+  };
+
+  const handleReviewUpdated = () => {
+    // Refresh reviews list when review is updated
+    loadReviews();
   };
 
   if (loading) {
@@ -501,10 +540,18 @@ const Profile = () => {
                               </div>
                             </div>
                             <div className="flex space-x-2 sm:ml-4 sm:flex-shrink-0">
-                              <button className="p-2 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors">
+                              <button 
+                                onClick={() => handleEditReview(review)}
+                                className="p-2 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                                title="Edit review"
+                              >
                                 <Edit3 className="w-4 h-4" />
                               </button>
-                              <button className="p-2 text-gray-400 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors">
+                              <button 
+                                onClick={() => handleDeleteReview(review)}
+                                className="p-2 text-gray-400 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                                title="Delete review"
+                              >
                                 <Trash2 className="w-4 h-4" />
                               </button>
                             </div>
@@ -657,6 +704,41 @@ const Profile = () => {
         profileData={profileData}
         onProfileUpdated={handleProfileUpdated}
       />
+
+      {/* Review Edit Modal */}
+      <ReviewFormModal
+        isOpen={isReviewEditModalOpen}
+        onClose={() => {
+          setIsReviewEditModalOpen(false);
+          setReviewToEdit(null);
+        }}
+        productId={reviewToEdit?.product_id}
+        productName={reviewToEdit?.product_name}
+        onReviewSubmitted={handleReviewUpdated}
+        reviewToEdit={reviewToEdit}
+      />
+
+      {/* Delete Review Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Review</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete your review for "{reviewToDelete?.product_name}"? 
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteReview}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Review
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };

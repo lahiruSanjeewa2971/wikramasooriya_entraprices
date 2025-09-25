@@ -360,21 +360,21 @@ const ProfileEditModal = ({ isOpen, onClose, user, profileData, onProfileUpdated
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+        className="fixed inset-0 bg-black/50 flex items-center justify-center p-2 sm:p-4 z-50"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={(e) => e.target === e.currentTarget && onClose()}
       >
         <motion.div
-          className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden"
+          className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden mx-2 sm:mx-4"
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">Edit Profile</h2>
+          <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Edit Profile</h2>
             <button
               onClick={onClose}
               className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
@@ -385,21 +385,21 @@ const ProfileEditModal = ({ isOpen, onClose, user, profileData, onProfileUpdated
 
           {/* Tabs */}
           <div className="border-b border-gray-200">
-            <nav className="flex space-x-8 px-6">
+            <nav className="flex space-x-2 sm:space-x-8 px-2 sm:px-6 overflow-x-auto">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 transition-colors ${
+                    className={`py-3 sm:py-4 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm flex items-center space-x-1 sm:space-x-2 transition-colors whitespace-nowrap ${
                       activeTab === tab.id
                         ? 'border-primary text-primary'
                         : 'border-transparent text-gray-500 hover:text-gray-700'
                     }`}
                   >
-                    <Icon className="w-4 h-4" />
-                    <span>{tab.label}</span>
+                    <Icon className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span className="hidden xs:inline">{tab.label}</span>
                   </button>
                 );
               })}
@@ -407,10 +407,10 @@ const ProfileEditModal = ({ isOpen, onClose, user, profileData, onProfileUpdated
           </div>
 
           {/* Content */}
-          <div className="p-6 max-h-[60vh] overflow-y-auto">
+          <div className="p-4 sm:p-6 max-h-[60vh] overflow-y-auto">
             {activeTab === 'personal' && (
-              <form onSubmit={handlePersonalInfoSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <form onSubmit={handlePersonalInfoSubmit} className="space-y-4 sm:space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                   {/* Mobile Number */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -506,19 +506,20 @@ const ProfileEditModal = ({ isOpen, onClose, user, profileData, onProfileUpdated
                 </div>
 
                 {/* Submit Button */}
-                <div className="flex justify-end space-x-3 pt-4">
+                <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-4">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={onClose}
                     disabled={isLoading}
+                    className="w-full sm:w-auto"
                   >
                     Cancel
                   </Button>
                   <Button
                     type="submit"
                     disabled={isLoading}
-                    className="bg-primary hover:bg-primary/90"
+                    className="bg-primary hover:bg-primary/90 w-full sm:w-auto"
                   >
                     {isLoading ? 'Saving...' : 'Save Changes'}
                   </Button>
@@ -527,7 +528,7 @@ const ProfileEditModal = ({ isOpen, onClose, user, profileData, onProfileUpdated
             )}
 
             {activeTab === 'avatar' && (
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {/* Current Avatar */}
                 <div className="text-center">
                   <div className="relative inline-block">
@@ -535,16 +536,16 @@ const ProfileEditModal = ({ isOpen, onClose, user, profileData, onProfileUpdated
                       <img
                         src={avatarPreview}
                         alt="Preview"
-                        className="w-32 h-32 rounded-full object-cover border-4 border-gray-200"
+                        className="w-24 h-24 sm:w-32 sm:h-32 rounded-full object-cover border-4 border-gray-200"
                       />
                     ) : profileData?.avatar_url || user?.avatar_url ? (
                       <img
                         src={profileData?.avatar_url || user?.avatar_url}
                         alt="Current avatar"
-                        className="w-32 h-32 rounded-full object-cover border-4 border-gray-200"
+                        className="w-24 h-24 sm:w-32 sm:h-32 rounded-full object-cover border-4 border-gray-200"
                       />
                     ) : (
-                      <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary to-primary-variant flex items-center justify-center text-4xl font-bold text-white border-4 border-gray-200">
+                      <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-gradient-to-br from-primary to-primary-variant flex items-center justify-center text-2xl sm:text-4xl font-bold text-white border-4 border-gray-200">
                         {user?.name?.charAt(0)?.toUpperCase()}
                       </div>
                     )}
@@ -568,12 +569,12 @@ const ProfileEditModal = ({ isOpen, onClose, user, profileData, onProfileUpdated
                     </p>
                   </div>
 
-                  <div className="flex space-x-3">
+                  <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
                     {avatarFile && (
                       <Button
                         onClick={handleAvatarUpload}
                         disabled={isLoading}
-                        className="bg-primary hover:bg-primary/90"
+                        className="bg-primary hover:bg-primary/90 w-full sm:w-auto"
                       >
                         {isLoading ? 'Uploading...' : 'Upload Picture'}
                       </Button>
@@ -584,7 +585,7 @@ const ProfileEditModal = ({ isOpen, onClose, user, profileData, onProfileUpdated
                         onClick={() => setShowRemoveAvatarDialog(true)}
                         disabled={isLoading}
                         variant="outline"
-                        className="text-red-600 border-red-600 hover:bg-red-50"
+                        className="text-red-600 border-red-600 hover:bg-red-50 w-full sm:w-auto"
                       >
                         <Trash2 className="w-4 h-4 mr-2" />
                         Remove Picture
@@ -596,13 +597,13 @@ const ProfileEditModal = ({ isOpen, onClose, user, profileData, onProfileUpdated
             )}
 
             {activeTab === 'addresses' && (
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {/* Add Address Button */}
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0">
                   <h3 className="text-lg font-medium text-gray-900">Your Addresses</h3>
                   <Button
                     onClick={() => setShowAddressForm(true)}
-                    className="bg-primary hover:bg-primary/90"
+                    className="bg-primary hover:bg-primary/90 w-full sm:w-auto"
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Add Address
@@ -611,12 +612,12 @@ const ProfileEditModal = ({ isOpen, onClose, user, profileData, onProfileUpdated
 
                 {/* Address Form */}
                 {showAddressForm && (
-                  <div className="bg-gray-50 p-6 rounded-lg border">
+                  <div className="bg-gray-50 p-4 sm:p-6 rounded-lg border">
                     <h4 className="text-lg font-medium text-gray-900 mb-4">
                       {editingAddress ? 'Edit Address' : 'Add New Address'}
                     </h4>
                     <form onSubmit={handleAddressSubmit} className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             Full Name *
@@ -774,7 +775,7 @@ const ProfileEditModal = ({ isOpen, onClose, user, profileData, onProfileUpdated
                           </div>
                         </div>
                       </div>
-                      <div className="flex justify-end space-x-3 pt-4">
+                      <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-4">
                         <Button
                           type="button"
                           variant="outline"
@@ -794,13 +795,14 @@ const ProfileEditModal = ({ isOpen, onClose, user, profileData, onProfileUpdated
                               address_type: 'shipping',
                             });
                           }}
+                          className="w-full sm:w-auto"
                         >
                           Cancel
                         </Button>
                         <Button
                           type="submit"
                           disabled={isLoading}
-                          className="bg-primary hover:bg-primary/90"
+                          className="bg-primary hover:bg-primary/90 w-full sm:w-auto"
                         >
                           {isLoading ? 'Saving...' : editingAddress ? 'Update Address' : 'Add Address'}
                         </Button>
@@ -820,9 +822,9 @@ const ProfileEditModal = ({ isOpen, onClose, user, profileData, onProfileUpdated
                   ) : (
                     addresses.map((address) => (
                       <div key={address.id} className="bg-gray-50 p-4 rounded-lg border">
-                        <div className="flex justify-between items-start">
+                        <div className="flex flex-col sm:flex-row justify-between items-start space-y-3 sm:space-y-0">
                           <div className="flex-1">
-                            <div className="flex items-center space-x-2 mb-2">
+                            <div className="flex flex-wrap items-center gap-2 mb-2">
                               <h5 className="font-medium text-gray-900">{address.full_name}</h5>
                               {address.is_default && (
                                 <span className="px-2 py-1 bg-primary text-white text-xs rounded-full">
@@ -845,13 +847,13 @@ const ProfileEditModal = ({ isOpen, onClose, user, profileData, onProfileUpdated
                               <p className="text-gray-700 text-sm">{address.phone}</p>
                             )}
                           </div>
-                          <div className="flex space-x-2 ml-4">
+                          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 sm:ml-4 w-full sm:w-auto">
                             {!address.is_default && (
                               <Button
                                 onClick={() => handleSetDefaultAddress(address.id)}
                                 variant="outline"
                                 size="sm"
-                                className="text-xs"
+                                className="text-xs w-full sm:w-auto"
                               >
                                 Set Default
                               </Button>
@@ -860,6 +862,7 @@ const ProfileEditModal = ({ isOpen, onClose, user, profileData, onProfileUpdated
                               onClick={() => handleEditAddress(address)}
                               variant="outline"
                               size="sm"
+                              className="w-full sm:w-auto"
                             >
                               <Edit3 className="w-3 h-3" />
                             </Button>
@@ -867,7 +870,7 @@ const ProfileEditModal = ({ isOpen, onClose, user, profileData, onProfileUpdated
                               onClick={() => confirmDeleteAddress(address.id)}
                               variant="outline"
                               size="sm"
-                              className="text-red-600 border-red-600 hover:bg-red-50"
+                              className="text-red-600 border-red-600 hover:bg-red-50 w-full sm:w-auto"
                             >
                               <Trash2 className="w-3 h-3" />
                             </Button>

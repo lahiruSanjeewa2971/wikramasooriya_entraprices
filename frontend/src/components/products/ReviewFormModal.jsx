@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Star, Loader2 } from 'lucide-react';
 import { z } from 'zod';
@@ -6,6 +6,8 @@ import reviewService from '@/services/reviewService';
 import toastService from '@/services/toastService';
 import authService from '@/services/authService';
 import { useNavigate } from 'react-router-dom';
+import Input from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 // Zod validation schema for review form
 const reviewSchema = z.object({
@@ -23,7 +25,7 @@ const reviewSchema = z.object({
     .max(1000, "Comment must be less than 1000 characters")
 });
 
-const ReviewFormModal = ({ isOpen, onClose, productId, productName, onReviewSubmitted }) => {
+const ReviewFormModal = ({ isOpen, onClose, productId, productName, onReviewSubmitted, reviewToEdit = null }) => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     rating: 0,
@@ -33,6 +35,24 @@ const ReviewFormModal = ({ isOpen, onClose, productId, productName, onReviewSubm
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [hoveredRating, setHoveredRating] = useState(0);
+
+  // Initialize form with review data if editing
+  useEffect(() => {
+    if (reviewToEdit) {
+      setFormData({
+        rating: reviewToEdit.rating,
+        title: reviewToEdit.title,
+        comment: reviewToEdit.comment
+      });
+    } else {
+      setFormData({
+        rating: 0,
+        title: '',
+        comment: ''
+      });
+    }
+    setErrors({});
+  }, [reviewToEdit, isOpen]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -51,11 +71,18 @@ const ReviewFormModal = ({ isOpen, onClose, productId, productName, onReviewSubm
       
       setIsLoading(true);
       
-      // Call review service
-      const result = await reviewService.createReview(productId, validatedData);
+      let result;
+      if (reviewToEdit) {
+        // Update existing review
+        result = await reviewService.updateReview(productId, reviewToEdit.id, validatedData);
+        toastService.success("Review updated successfully!");
+      } else {
+        // Create new review
+        result = await reviewService.createReview(productId, validatedData);
+        toastService.success("Review submitted successfully! Thank you for your feedback.");
+      }
       
       if (result.success) {
-        toastService.success("Review submitted successfully! Thank you for your feedback.");
         onReviewSubmitted && onReviewSubmitted();
         onClose();
         // Reset form
@@ -154,7 +181,9 @@ const ReviewFormModal = ({ isOpen, onClose, productId, productName, onReviewSubm
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
             <div>
-              <h3 className="text-xl font-semibold text-gray-900">Write a Review</h3>
+              <h3 className="text-xl font-semibold text-gray-900">
+                {reviewToEdit ? 'Edit Review' : 'Write a Review'}
+              </h3>
               <p className="text-sm text-gray-600 mt-1">{productName}</p>
             </div>
             <button
@@ -189,13 +218,13 @@ const ReviewFormModal = ({ isOpen, onClose, productId, productName, onReviewSubm
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Review Title *
               </label>
-              <input
+              <Input
                 type="text"
                 name="title"
                 value={formData.title}
                 onChange={handleChange}
                 placeholder="Give your review a title"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-colors"
+                className={errors.title ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
               />
               {errors.title && (
                 <p className="text-sm text-red-600 mt-1">{errors.title}</p>
@@ -216,7 +245,11 @@ const ReviewFormModal = ({ isOpen, onClose, productId, productName, onReviewSubm
                 onChange={handleChange}
                 rows={4}
                 placeholder="Share your experience with this product. What did you like or dislike? How does it compare to your expectations?"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-colors resize-none"
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:border-transparent transition-colors resize-none ${
+                  errors.comment 
+                    ? 'border-red-500 focus:border-red-500 focus:ring-red-500' 
+                    : 'border-gray-300 focus:ring-primary'
+                }`}
               />
               {errors.comment && (
                 <p className="text-sm text-red-600 mt-1">{errors.comment}</p>
@@ -239,28 +272,29 @@ const ReviewFormModal = ({ isOpen, onClose, productId, productName, onReviewSubm
 
             {/* Actions */}
             <div className="flex space-x-3 pt-4">
-              <button
+              <Button
                 type="button"
+                variant="outline"
                 onClick={onClose}
-                className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                className="flex-1"
                 disabled={isLoading}
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
-                className="flex-1 bg-primary text-white py-2 px-4 rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 flex items-center justify-center space-x-2"
                 disabled={isLoading}
               >
                 {isLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Submitting...</span>
+                    <span>{reviewToEdit ? 'Updating...' : 'Submitting...'}</span>
                   </>
                 ) : (
-                  'Submit Review'
+                  reviewToEdit ? 'Update Review' : 'Submit Review'
                 )}
-              </button>
+              </Button>
             </div>
           </form>
         </motion.div>
