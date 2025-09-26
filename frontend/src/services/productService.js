@@ -59,6 +59,17 @@ class ProductService {
     }
   }
 
+  // Semantic search products - AI-powered search using embeddings
+  async semanticSearch(query) {
+    try {
+      const response = await apiClient.get('/search/semantic', { params: { q: query } });
+      return response.data;
+    } catch (error) {
+      const message = error.response?.data?.message || 'Failed to perform semantic search.';
+      throw new Error(message);
+    }
+  }
+
   // Get featured products
   async getFeaturedProducts() {
     try {

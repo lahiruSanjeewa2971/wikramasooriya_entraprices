@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Filter, ShoppingCart, Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import ProductSearch from "@/components/ProductSearch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import EnhancedSearch from "@/components/EnhancedSearch";
 import productService from "@/services/productService";
 import cartService from "@/services/cartService";
 import authService from "@/services/authService";
@@ -18,14 +19,12 @@ const Products = () => {
   const [loading, setLoading] = useState(true);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortBy, setSortBy] = useState("created_at");
   const [sortOrder, setSortOrder] = useState("desc");
   const [isSearchMode, setIsSearchMode] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [addingToCart, setAddingToCart] = useState({});
-  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
-  const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
 
   // Animation variants
   const pageVariants = {
@@ -240,7 +239,7 @@ const Products = () => {
     try {
       setLoading(true);
       const filters = {
-        category: selectedCategory || undefined,
+        category: selectedCategory === "all" ? undefined : selectedCategory,
         sortBy,
         sortOrder
       };
@@ -271,7 +270,7 @@ const Products = () => {
     }
   };
 
-  const handleSearchResults = async (searchResults, query) => {
+  const handleSearchResults = async (searchResults, query, isAISearch = false) => {
     if (searchResults === null) {
       // Clear search mode and fetch fresh data with current filters
       setIsSearchMode(false);
@@ -281,7 +280,7 @@ const Products = () => {
       try {
         // Fetch fresh products with current category and sorting filters
         const filters = {
-          category: selectedCategory || undefined,
+          category: selectedCategory === "all" ? undefined : selectedCategory,
           sortBy,
           sortOrder
         };
@@ -306,7 +305,7 @@ const Products = () => {
       setIsSearchMode(true);
       setSearchQuery(query);
       
-      if (selectedCategory) {
+      if (selectedCategory && selectedCategory !== "all") {
         // Filter search results by current category
         const filteredResults = searchResults.filter(product => 
           product.category_id === parseInt(selectedCategory)
@@ -314,7 +313,8 @@ const Products = () => {
         setProducts(filteredResults);
         
         if (filteredResults.length !== searchResults.length) {
-          toastService.show(`Found ${filteredResults.length} products in "${categories.find(c => c.id === parseInt(selectedCategory))?.name}" category for "${query}"`, 'info');
+          const searchType = isAISearch ? 'AI search' : 'search';
+          toastService.show(`Found ${filteredResults.length} products in "${categories.find(c => c.id === parseInt(selectedCategory))?.name}" category for "${query}" (${searchType})`, 'info');
         }
       } else {
         setProducts(searchResults);
@@ -354,14 +354,36 @@ const Products = () => {
     navigate(`/products/${productId}`);
   };
 
-  const clearFilters = () => {
+  const clearFilters = async () => {
     setSearchQuery("");
-    setSelectedCategory("");
+    setSelectedCategory("all");
     setSortBy("created_at");
     setSortOrder("desc");
     setIsSearchMode(false);
     setSearchLoading(false);
-    loadProducts();
+    
+    // Load products with cleared filters
+    try {
+      setLoading(true);
+      const response = await productService.getProducts({
+        category: undefined, // No category filter
+        sortBy: "created_at",
+        sortOrder: "desc"
+      });
+      
+      if (response.success && response.data.products) {
+        setProducts(response.data.products);
+      } else {
+        setProducts([]);
+      }
+    } catch (error) {
+      toastService.show("Failed to load products", "error");
+      console.error("Error loading products:", error);
+      setProducts([]);
+    } finally {
+      setLoading(false);
+    }
+    
     toastService.show('All filters cleared, showing all products', 'info');
   };
 
@@ -374,9 +396,9 @@ const Products = () => {
   };
 
   const handleCategoryChange = async (categoryId) => {
-    // Convert empty string to undefined for "All Categories" selection
-    const actualCategoryId = categoryId === "" ? undefined : categoryId;
-    setSelectedCategory(categoryId); // Keep the UI state as empty string for the select element
+    // Convert "all" to undefined for "All Categories" selection
+    const actualCategoryId = categoryId === "all" ? undefined : categoryId;
+    setSelectedCategory(categoryId); // Keep the UI state consistent
     
     if (isSearchMode) {
       // If in search mode, re-apply search with new category filter
@@ -391,7 +413,7 @@ const Products = () => {
             setProducts(filteredResults);
             toastService.show(`Showing ${filteredResults.length} products in "${categories.find(c => c.id === parseInt(actualCategoryId))?.name}" category for "${searchQuery}"`, 'info');
           } else {
-            // Show all search results when no category is selected
+            // Show all search results when "All Categories" is selected
             setProducts(response.data.products);
             toastService.show(`Showing all ${response.data.products.length} search results for "${searchQuery}"`, 'info');
           }
@@ -492,138 +514,124 @@ const Products = () => {
       </Helmet>
 
       <motion.div 
-        className="min-h-screen bg-gray-50 py-12"
+        className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30"
         variants={pageVariants}
         initial="initial"
         animate="animate"
       >
-        <div className="container mx-auto px-4">
-          {/* Header */}
+        <div className="container mx-auto px-4 py-8">
+          {/* Professional Header */}
           <motion.div 
-            className="text-center mb-12"
+            className="text-center mb-8"
             variants={staggerContainer}
             initial="initial"
             animate="animate"
           >
-            <motion.h1 
-              className="text-4xl md:text-5xl font-bold text-gray-900 mb-4"
+            <motion.div 
+              className="inline-flex items-center space-x-2 bg-white px-4 py-2 rounded-full shadow-sm border border-gray-200 mb-4"
               variants={headerVariants}
             >
-              Industrial Products
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <span className="text-sm font-medium text-gray-600">Industrial Solutions</span>
+            </motion.div>
+            
+            <motion.h1 
+              className="text-3xl md:text-4xl font-bold text-gray-900 mb-3"
+              variants={headerVariants}
+            >
+              Professional Equipment & Parts
             </motion.h1>
             <motion.p 
-              className="text-lg text-gray-600 max-w-2xl mx-auto"
+              className="text-gray-600 max-w-xl mx-auto text-sm"
               variants={headerVariants}
             >
-              Discover our comprehensive collection of high-quality industrial spare parts, 
-              tools, and equipment for your business needs.
+              High-quality industrial components for your business operations
             </motion.p>
           </motion.div>
 
-          {/* Search and Filters */}
+          {/* Compact Search and Filters */}
           <motion.div 
-            className="bg-white rounded-lg shadow-sm p-6 mb-8"
+            className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-8"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {/* Search */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
+              {/* Enhanced Search */}
               <motion.div 
-                className="md:col-span-2"
+                className="lg:col-span-6"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.4, delay: 0.3 }}
               >
-                <ProductSearch 
+                <EnhancedSearch 
                   onSearchResults={handleSearchResults}
                   placeholder={
                     isSearchMode 
                       ? selectedCategory 
-                        ? `Search within ${categories.find(c => c.id === parseInt(selectedCategory))?.name} category...`
+                        ? `Search within ${categories.find(c => c.id === parseInt(selectedCategory))?.name}...`
                         : "Search within results..."
-                      : "Search products by name..."
+                      : "Search products by name or description..."
                   }
                 />
               </motion.div>
 
               {/* Category Filter */}
               <motion.div
+                className="lg:col-span-3"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.4, delay: 0.4 }}
               >
-                <div className="relative">
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => handleCategoryChange(e.target.value)}
-                    onFocus={() => setIsCategoryDropdownOpen(true)}
-                    onBlur={() => setIsCategoryDropdownOpen(false)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
-                  >
-                    <option value="">All Categories</option>
-                    {categories.map((category, index) => (
-                      <option key={category.id} value={category.id}>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Category</label>
+                <Select value={selectedCategory || "all"} onValueChange={handleCategoryChange}>
+                  <SelectTrigger className="w-full h-10 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm bg-white">
+                    <SelectValue placeholder="All Categories" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id.toString()}>
                         {category.name}
-                      </option>
+                      </SelectItem>
                     ))}
-                  </select>
-                  
-                  {/* Animated dropdown indicator */}
-                  <motion.div
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none"
-                    animate={{ rotate: isCategoryDropdownOpen ? 180 : 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </motion.div>
-                </div>
+                  </SelectContent>
+                </Select>
               </motion.div>
 
               {/* Sort */}
               <motion.div
+                className="lg:col-span-3"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.4, delay: 0.5 }}
               >
-                <div className="relative">
-                  <select
-                    value={`${sortBy}-${sortOrder}`}
-                    onChange={(e) => handleSortChange(e.target.value)}
-                    onFocus={() => setIsSortDropdownOpen(true)}
-                    onBlur={() => setIsSortDropdownOpen(false)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
-                    disabled={isSearchMode}
-                  >
-                    <option value="created_at-desc">Newest First</option>
-                    <option value="created_at-asc">Oldest First</option>
-                    <option value="name-asc">Name A-Z</option>
-                    <option value="name-desc">Name Z-A</option>
-                    <option value="price-asc">Price Low-High</option>
-                    <option value="price-desc">Price High-Low</option>
-                  </select>
-                  
-                  {/* Animated dropdown indicator */}
-                  <motion.div
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none"
-                    animate={{ rotate: isSortDropdownOpen ? 180 : 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </motion.div>
-                </div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Sort By</label>
+                <Select 
+                  value={`${sortBy}-${sortOrder}`} 
+                  onValueChange={handleSortChange}
+                  disabled={isSearchMode}
+                >
+                  <SelectTrigger className="w-full h-10 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm bg-white disabled:opacity-50 disabled:cursor-not-allowed">
+                    <SelectValue placeholder="Newest First" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="created_at-desc">Newest First</SelectItem>
+                    <SelectItem value="created_at-asc">Oldest First</SelectItem>
+                    <SelectItem value="name-asc">Name A-Z</SelectItem>
+                    <SelectItem value="name-desc">Name Z-A</SelectItem>
+                    <SelectItem value="price-asc">Price Low-High</SelectItem>
+                    <SelectItem value="price-desc">Price High-Low</SelectItem>
+                  </SelectContent>
+                </Select>
               </motion.div>
             </div>
 
-            {/* Clear Filters */}
+            {/* Clear Filters - Compact */}
             <AnimatePresence>
-              {(searchQuery || selectedCategory || sortBy !== "created_at" || sortOrder !== "desc" || isSearchMode) && (
+              {(searchQuery || (selectedCategory && selectedCategory !== "all") || sortBy !== "created_at" || sortOrder !== "desc" || isSearchMode) && (
                 <motion.div 
-                  className="mt-4 text-center"
+                  className="mt-4 flex justify-center"
                   initial={{ opacity: 0, y: -10, scale: 0.9 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -10, scale: 0.9 }}
@@ -633,8 +641,8 @@ const Products = () => {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    <Button variant="outline" size="sm" onClick={clearFilters}>
-                      Clear Filters
+                    <Button variant="outline" size="sm" onClick={clearFilters} className="text-xs">
+                      Clear All Filters
                     </Button>
                   </motion.div>
                 </motion.div>
@@ -687,98 +695,110 @@ const Products = () => {
                     custom={index}
                   >
                     <Card 
-                      className="group hover:shadow-xl transition-all duration-300 border-0 bg-white h-full cursor-pointer"
+                      className="group hover:shadow-2xl transition-all duration-500 border border-gray-100 bg-white h-full cursor-pointer overflow-hidden flex flex-col"
                       onClick={() => handleProductClick(product.id)}
                     >
-                  <CardContent className="p-0 relative overflow-hidden">
-                    {/* Product Image */}
-                    <div className="relative aspect-square overflow-hidden rounded-t-lg">
-                      <motion.img
-                        src={product.image_url || "https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=400&h=300&fit=crop"}
-                        alt={product.name}
-                        className="w-full h-full object-cover"
-                        variants={imageHoverVariants}
-                        whileHover="hover"
-                      />
-                      
-                      {/* Add to Cart Button - Modern Plus Icon */}
-                      <div className="absolute top-3 right-3">
-                        <motion.button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleAddToCart(product.id);
-                          }}
-                          disabled={addingToCart[product.id] || product.stock_qty === 0}
-                          className="bg-white/90 backdrop-blur-sm hover:bg-white text-gray-700 hover:text-primary p-2 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Add to Cart"
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          <AnimatePresence mode="wait">
-                            {addingToCart[product.id] ? (
-                              <motion.div
-                                key="loading"
-                                initial={{ opacity: 0, rotate: -90 }}
-                                animate={{ opacity: 1, rotate: 0 }}
-                                exit={{ opacity: 0, rotate: 90 }}
-                                transition={{ duration: 0.2 }}
-                              >
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                              </motion.div>
-                            ) : (
-                              <motion.div
-                                key="plus"
-                                variants={plusIconVariants}
-                                initial="initial"
-                                whileHover="rotate"
-                                animate="reset"
-                              >
-                                <Plus className="w-5 h-5" />
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </motion.button>
-                      </div>
-
-                      {/* Removed Quick Actions Overlay - no single product view needed */}
-                    </div>
-
-                    {/* Product Info */}
-                    <div className="p-4">
-                      <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-primary transition-colors">
-                        {product.name}
-                      </h3>
-                      
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                        {product.short_description || product.description}
-                      </p>
-                      
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-xl font-bold text-primary">
-                          {formatPrice(product.price)}
-                        </span>
-                        
-                        <div className="text-sm text-gray-500">
-                          SKU: {product.sku}
+                      <CardContent className="p-0 relative flex flex-col h-full">
+                        {/* Product Image */}
+                        <div className="relative aspect-square overflow-hidden bg-gray-50">
+                          <motion.img
+                            src={product.image_url || "https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=400&h=300&fit=crop"}
+                            alt={product.name}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                            variants={imageHoverVariants}
+                            whileHover="hover"
+                          />
+                          
+                          {/* Professional Overlay */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                          
+                          {/* Stock Badge */}
+                          <div className="absolute top-3 left-3">
+                            <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              product.stock_qty > 0 
+                                ? 'bg-green-100 text-green-700 border border-green-200' 
+                                : 'bg-red-100 text-red-700 border border-red-200'
+                            }`}>
+                              {product.stock_qty > 0 ? `${product.stock_qty} in stock` : 'Out of stock'}
+                            </div>
+                          </div>
+                          
+                          {/* Add to Cart Button */}
+                          <div className="absolute top-3 right-3">
+                            <motion.button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAddToCart(product.id);
+                              }}
+                              disabled={addingToCart[product.id] || product.stock_qty === 0}
+                              className="bg-white/95 backdrop-blur-sm hover:bg-white text-gray-700 hover:text-blue-600 p-2.5 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-200"
+                              title="Add to Cart"
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.95 }}
+                            >
+                              <AnimatePresence mode="wait">
+                                {addingToCart[product.id] ? (
+                                  <motion.div
+                                    key="loading"
+                                    initial={{ opacity: 0, rotate: -90 }}
+                                    animate={{ opacity: 1, rotate: 0 }}
+                                    exit={{ opacity: 0, rotate: 90 }}
+                                    transition={{ duration: 0.2 }}
+                                  >
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  </motion.div>
+                                ) : (
+                                  <motion.div
+                                    key="plus"
+                                    variants={plusIconVariants}
+                                    initial="initial"
+                                    whileHover="rotate"
+                                    animate="reset"
+                                  >
+                                    <Plus className="w-4 h-4" />
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </motion.button>
+                          </div>
                         </div>
-                      </div>
-                      
-                      {/* Stock Status */}
-                      <div className="mb-3">
-                        {product.stock_qty > 0 ? (
-                          <span className="text-sm text-green-600 font-medium">
-                            ✓ In Stock ({product.stock_qty})
-                          </span>
-                        ) : (
-                          <span className="text-sm text-red-600 font-medium">
-                            ✗ Out of Stock
-                          </span>
-                        )}
-                      </div>
 
-                      {/* Removed Add to Cart Button - only plus icon needed */}
-                    </div>
-                  </CardContent>
+                        {/* Product Info - Flex container to push button to bottom */}
+                        <div className="p-5 flex flex-col flex-grow">
+                          <div className="flex-grow">
+                            <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors text-sm leading-tight">
+                              {product.name}
+                            </h3>
+                            
+                            <p className="text-xs text-gray-500 mb-3 line-clamp-2 leading-relaxed">
+                              {product.short_description || product.description}
+                            </p>
+                          </div>
+                          
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-lg font-bold text-blue-600">
+                              {formatPrice(product.price)}
+                            </span>
+                            
+                            <div className="text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded">
+                              {product.sku}
+                            </div>
+                          </div>
+                          
+                          {/* Professional Action Button - Always at bottom */}
+                          <motion.button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleProductClick(product.id);
+                            }}
+                            className="w-full py-2.5 bg-gray-50 hover:bg-blue-50 text-gray-700 hover:text-blue-600 rounded-lg text-xs font-medium transition-all duration-200 border border-gray-200 hover:border-blue-200 mt-auto"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                          >
+                            View Details
+                          </motion.button>
+                        </div>
+                      </CardContent>
                     </Card>
                   </motion.div>
                 ))}
@@ -786,29 +806,45 @@ const Products = () => {
             </motion.div>
           )}
 
-          {/* Results Count */}
+          {/* Professional Results Summary */}
           {products.length > 0 && (
-            <div className="mt-8 text-center text-gray-600">
-              {isSearchMode ? (
-                <>
-                  Found {products.length} product{products.length !== 1 ? 's' : ''} for "{searchQuery}"
-                  {selectedCategory && (
-                    <span className="block text-sm text-gray-500 mt-1">
-                      in {categories.find(c => c.id === parseInt(selectedCategory))?.name} category
-                    </span>
-                  )}
-                </>
-              ) : (
-                <>
-                  Showing {products.length} product{products.length !== 1 ? 's' : ''}
-                  {selectedCategory && (
-                    <span className="block text-sm text-gray-500 mt-1">
-                      in {categories.find(c => c.id === parseInt(selectedCategory))?.name} category
-                    </span>
-                  )}
-                </>
-              )}
-            </div>
+            <motion.div 
+              className="mt-8 bg-white rounded-xl p-4 shadow-sm border border-gray-100"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <span className="text-sm font-medium text-gray-700">
+                    {isSearchMode ? (
+                      <>
+                        Found {products.length} product{products.length !== 1 ? 's' : ''} for "{searchQuery}"
+                        {selectedCategory && (
+                          <span className="text-gray-500 ml-2">
+                            in {categories.find(c => c.id === parseInt(selectedCategory))?.name}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        Showing {products.length} product{products.length !== 1 ? 's' : ''}
+                        {selectedCategory && (
+                          <span className="text-gray-500 ml-2">
+                            in {categories.find(c => c.id === parseInt(selectedCategory))?.name}
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </span>
+                </div>
+                
+                <div className="text-xs text-gray-400">
+                  {new Date().toLocaleDateString()}
+                </div>
+              </div>
+            </motion.div>
           )}
 
           {/* Removed Cart Count Display - no floating badge needed */}

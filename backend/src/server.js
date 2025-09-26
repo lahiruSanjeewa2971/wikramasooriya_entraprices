@@ -22,6 +22,8 @@ import excelRoutes from './routes/excel.js';
 import googleAuthRoutes from './routes/googleAuth.js';
 import reviewRoutes from './routes/reviews.js';
 import userProfileRoutes from './routes/userProfile.js';
+import searchRoutes from './routes/search.js';
+import { SearchController } from './controllers/searchController.js';
 
 // Load environment variables
 dotenv.config();
@@ -33,12 +35,26 @@ const API_PREFIX = process.env.API_PREFIX || '/api';
 // Test database connection
 testConnection().then(connected => {
   if (connected) {
-    logger.info('✅ Database connection successful');
+    logger.info('SUCCESS: Database connection successful');
   } else {
-    logger.error('❌ Database connection failed');
+    logger.error('ERROR: Database connection failed');
   }
 }).catch(err => {
-  logger.error('❌ Database connection error:', err);
+  logger.error('ERROR: Database connection error:', err);
+});
+
+// Test Docker semantic search container connection
+SearchController.testDockerConnection().then(status => {
+  if (status.available) {
+    logger.info('SUCCESS: Docker semantic search container is ready!');
+    logger.info('AI-powered semantic search functionality is available');
+  } else {
+    logger.warn('WARNING: Docker semantic search container is not available');
+    logger.info('Semantic search will use fallback mode');
+    logger.info('TIP: Run "npm run docker:start" to enable AI search functionality');
+  }
+}).catch(err => {
+  logger.error('ERROR: Docker container check error:', err);
 });
 
 // Security middleware
@@ -126,6 +142,7 @@ app.use(`${API_PREFIX}/admin`, adminRoutes);
 app.use(`${API_PREFIX}/excel`, excelRoutes);
 app.use(`${API_PREFIX}/reviews`, reviewRoutes);
 app.use(`${API_PREFIX}/users`, userProfileRoutes);
+app.use(`${API_PREFIX}/search`, searchRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
@@ -141,11 +158,43 @@ app.use('*', (req, res) => {
 // Global error handler (must be last)
 app.use(errorHandler);
 
-// Start server
-app.listen(PORT, () => {
-  logger.info(`🚀 Server running on port ${PORT}`);
-  logger.info(`📚 API Documentation available at ${process.env.NODE_ENV === 'production' ? 'https://yourdomain.com' : `http://localhost:${PORT}`}${API_PREFIX}`);
-  logger.info(`🏥 Health check: ${process.env.NODE_ENV === 'production' ? 'https://yourdomain.com' : `http://localhost:${PORT}`}/health`);
+// Start server with error handling
+const server = app.listen(PORT, () => {
+  logger.info(`SUCCESS: Server running on port ${PORT}`);
+  logger.info(`API Documentation available at ${process.env.NODE_ENV === 'production' ? 'https://yourdomain.com' : `http://localhost:${PORT}`}${API_PREFIX}`);
+  logger.info(`Health check: ${process.env.NODE_ENV === 'production' ? 'https://yourdomain.com' : `http://localhost:${PORT}`}/health`);
+});
+
+// Handle server errors
+server.on('error', (error) => {
+  if (error.code === 'EADDRINUSE') {
+    logger.error(`ERROR: Port ${PORT} is already in use`);
+    logger.info(`TIP: Please stop the existing server or use a different port`);
+    logger.info(`TIP: You can kill the process using: netstat -ano | findstr :${PORT}`);
+    logger.info(`TIP: Or run: npm run kill:port`);
+    logger.info(`TIP: Or restart your terminal and try again`);
+    process.exit(1);
+  } else {
+    logger.error('ERROR: Server error:', error);
+    process.exit(1);
+  }
+});
+
+// Graceful shutdown handling
+process.on('SIGTERM', () => {
+  logger.info('SIGTERM received, shutting down gracefully');
+  server.close(() => {
+    logger.info('SUCCESS: Server closed');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  logger.info('SIGINT received, shutting down gracefully');
+  server.close(() => {
+    logger.info('SUCCESS: Server closed');
+    process.exit(0);
+  });
 });
 
 export default app;
