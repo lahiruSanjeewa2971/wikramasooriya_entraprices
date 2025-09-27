@@ -10,6 +10,7 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { logger } from './utils/logger.js';
 import { testConnection } from './db/simple-connection.js';
 import passport, { configureGoogleStrategy } from './middleware/googleAuth.js';
+import { modelService } from './services/modelService.js';
 
 // Import routes
 import authRoutes from './routes/auth.js';
@@ -48,6 +49,19 @@ SearchController.testDockerConnection().then(status => {
   if (status.available) {
     logger.info('SUCCESS: Docker semantic search container is ready!');
     logger.info('AI-powered semantic search functionality is available');
+    
+    // Preload the AI model for instant responses
+    logger.info('Initializing AI model for semantic search...');
+    modelService.preloadModel().then(() => {
+      const cacheStatus = modelService.getCacheStatus();
+      if (cacheStatus.isLoaded) {
+        logger.info('🎉 AI Search system fully operational!');
+        logger.info('✅ Model loaded and ready for semantic search');
+      }
+    }).catch(error => {
+      logger.error('Failed to preload AI model:', error.message);
+      logger.warn('AI Search will be unavailable until model loads');
+    });
   } else {
     logger.warn('WARNING: Docker semantic search container is not available');
     logger.info('Semantic search will use fallback mode');
@@ -125,10 +139,18 @@ app.use(morgan('combined', {
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.json({ 
-    success: true, 
+  const modelStatus = modelService.getCacheStatus();
+  
+  res.json({
+    success: true,
     message: 'Wikramasooriya Enterprises API is running',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    aiSearch: {
+      available: modelStatus.isLoaded,
+      modelCached: modelStatus.isCached,
+      modelLoading: modelStatus.isLoading,
+      modelName: modelStatus.modelName
+    }
   });
 });
 

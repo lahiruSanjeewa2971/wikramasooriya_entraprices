@@ -60,9 +60,11 @@ class ProductService {
   }
 
   // Semantic search products - AI-powered search using embeddings
-  async semanticSearch(query) {
+  async semanticSearch(query, limit = 20) {
     try {
-      const response = await apiClient.get('/search/semantic', { params: { q: query } });
+      const response = await apiClient.get('/search/semantic', { 
+        params: { q: query, limit } 
+      });
       return response.data;
     } catch (error) {
       const message = error.response?.data?.message || 'Failed to perform semantic search.';

@@ -16,7 +16,7 @@ const EnhancedSearch = ({ onSearchResults, placeholder = "Search products..." })
     if (!searchQuery.trim()) {
       // Clear search mode and fetch fresh data with current filters
       setHasSearched(false);
-      onSearchResults(null, '', false); // This will trigger loadProducts() in parent
+      onSearchResults(null, '', false, null); // This will trigger loadProducts() in parent
       toastService.show('Search cleared, showing all products', 'info');
       return;
     }
@@ -26,11 +26,30 @@ const EnhancedSearch = ({ onSearchResults, placeholder = "Search products..." })
 
     try {
       let response;
+      let searchMetadata = null;
       
       if (isAISearchEnabled) {
         // Use semantic search (when backend is ready)
         response = await productService.semanticSearch(searchQuery.trim());
-        toastService.show(`🧠 AI Search: Found ${response.data.products.length} semantically relevant products for "${searchQuery.trim()}"`, 'success');
+        
+        // Extract AI search metadata
+        searchMetadata = {
+          searchType: response.data.searchType,
+          aiEnabled: response.data.aiEnabled,
+          message: response.data.message,
+          searchMetadata: response.data.searchMetadata,
+          warning: response.warning
+        };
+        
+        // Show appropriate toast based on search type
+        if (response.data.searchType === 'semantic') {
+          const avgSimilarity = response.data.searchMetadata?.avgSimilarity || 0;
+          toastService.show(`🧠 AI Search: Found ${response.data.products.length} semantically relevant products (avg relevance: ${Math.round(avgSimilarity * 100)}%)`, 'success');
+        } else if (response.data.searchType === 'semantic_fallback') {
+          toastService.show(`🧠 AI Search: No semantic matches found, showing ${response.data.products.length} regular search results`, 'warning');
+        } else if (response.data.searchType === 'fallback') {
+          toastService.show(`⚠️ AI Search unavailable, showing ${response.data.products.length} regular search results`, 'warning');
+        }
       } else {
         // Use regular search
         response = await productService.searchProducts(searchQuery.trim());
@@ -38,9 +57,9 @@ const EnhancedSearch = ({ onSearchResults, placeholder = "Search products..." })
       }
       
       if (response.success && response.data.products) {
-        onSearchResults(response.data.products, searchQuery.trim(), isAISearchEnabled);
+        onSearchResults(response.data.products, searchQuery.trim(), isAISearchEnabled, searchMetadata);
       } else {
-        onSearchResults([], searchQuery.trim(), isAISearchEnabled);
+        onSearchResults([], searchQuery.trim(), isAISearchEnabled, searchMetadata);
         toastService.show('No products found for your search', 'info');
       }
     } catch (error) {
@@ -52,19 +71,19 @@ const EnhancedSearch = ({ onSearchResults, placeholder = "Search products..." })
         try {
           const fallbackResponse = await productService.searchProducts(searchQuery.trim());
           if (fallbackResponse.success && fallbackResponse.data.products) {
-            onSearchResults(fallbackResponse.data.products, searchQuery.trim(), false);
+            onSearchResults(fallbackResponse.data.products, searchQuery.trim(), false, null);
             toastService.show(`Found ${fallbackResponse.data.products.length} products for "${searchQuery.trim()}"`, 'success');
           } else {
-            onSearchResults([], searchQuery.trim(), false);
+            onSearchResults([], searchQuery.trim(), false, null);
             toastService.show('No products found for your search', 'info');
           }
         } catch (fallbackError) {
           toastService.show('Search failed. Please try again.', 'error');
-          onSearchResults([], searchQuery.trim(), false);
+          onSearchResults([], searchQuery.trim(), false, null);
         }
       } else {
         toastService.show('Search failed. Please try again.', 'error');
-        onSearchResults([], searchQuery.trim(), false);
+        onSearchResults([], searchQuery.trim(), false, null);
       }
     } finally {
       setIsSearching(false);
@@ -75,7 +94,7 @@ const EnhancedSearch = ({ onSearchResults, placeholder = "Search products..." })
     setSearchQuery('');
     setHasSearched(false);
     // Clear search mode and fetch fresh data with current filters
-    onSearchResults(null, '', false);
+    onSearchResults(null, '', false, null);
     toastService.show('Search cleared, showing all products', 'info');
   };
 

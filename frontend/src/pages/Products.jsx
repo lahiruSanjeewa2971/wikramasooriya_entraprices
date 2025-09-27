@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import EnhancedSearch from "@/components/EnhancedSearch";
+import { AISearchIndicator, SearchStatusIndicator } from "@/components/AISearchIndicator";
 import productService from "@/services/productService";
 import cartService from "@/services/cartService";
 import authService from "@/services/authService";
@@ -23,6 +24,7 @@ const Products = () => {
   const [sortBy, setSortBy] = useState("created_at");
   const [sortOrder, setSortOrder] = useState("desc");
   const [isSearchMode, setIsSearchMode] = useState(false);
+  const [searchMetadata, setSearchMetadata] = useState(null);
   const [cartCount, setCartCount] = useState(0);
   const [addingToCart, setAddingToCart] = useState({});
 
@@ -270,7 +272,7 @@ const Products = () => {
     }
   };
 
-  const handleSearchResults = async (searchResults, query, isAISearch = false) => {
+  const handleSearchResults = async (searchResults, query, isAISearch = false, searchMetadata = null) => {
     if (searchResults === null) {
       // Clear search mode and fetch fresh data with current filters
       setIsSearchMode(false);
@@ -304,6 +306,13 @@ const Products = () => {
       // Show search results - but filter by current category if one is selected
       setIsSearchMode(true);
       setSearchQuery(query);
+      
+      // Store search metadata for display
+      if (searchMetadata) {
+        setSearchMetadata(searchMetadata);
+      } else {
+        setSearchMetadata(null);
+      }
       
       if (selectedCategory && selectedCategory !== "all") {
         // Filter search results by current category
@@ -723,6 +732,9 @@ const Products = () => {
                             </div>
                           </div>
                           
+                          {/* AI Search Indicator */}
+                          <AISearchIndicator product={product} searchMetadata={searchMetadata} />
+                          
                           {/* Add to Cart Button */}
                           <div className="absolute top-3 right-3">
                             <motion.button
@@ -803,6 +815,18 @@ const Products = () => {
                   </motion.div>
                 ))}
               </AnimatePresence>
+            </motion.div>
+          )}
+
+          {/* AI Search Status Indicator */}
+          {isSearchMode && searchMetadata && (
+            <motion.div 
+              className="mt-6 flex justify-center"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <SearchStatusIndicator searchMetadata={searchMetadata} />
             </motion.div>
           )}
 
