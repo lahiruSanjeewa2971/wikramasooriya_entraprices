@@ -782,9 +782,9 @@ const Products = () => {
                               {product.name}
                             </h3>
                             
-                            <p className="text-xs text-gray-500 mb-3 line-clamp-2 leading-relaxed">
+                            <div className="text-xs text-gray-500 mb-3 line-clamp-2 leading-relaxed whitespace-pre-wrap">
                               {product.short_description || product.description}
-                            </p>
+                            </div>
                           </div>
                           
                           <div className="flex items-center justify-between mb-3">

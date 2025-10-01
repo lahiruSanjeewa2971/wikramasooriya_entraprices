@@ -410,9 +410,9 @@ const Index = () => {
                 <h3 className="font-display text-xl md:text-2xl font-semibold text-foreground">
                   {selectedProduct.name}
                 </h3>
-                <p className="text-muted-foreground text-sm md:text-base leading-relaxed">
+                <div className="text-muted-foreground text-sm md:text-base leading-relaxed whitespace-pre-wrap">
                   {selectedProduct.description}
-                </p>
+                </div>
                 {/* <Button variant="outline" size="sm" className="mt-2">
                   Learn More
                 </Button> */}
