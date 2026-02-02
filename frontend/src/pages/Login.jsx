@@ -112,7 +112,7 @@ const Login = () => {
 
   return (
     <AuthLayout 
-      title="Welcome Back" 
+      title="Welcome Back." 
       subtitle="Sign in to your account to continue"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
